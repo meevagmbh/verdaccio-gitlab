@@ -15,7 +15,9 @@ export class AuthCache {
     return 300;
   }
 
-  private static _generateKeyHash(username: string, password: string) {
+  // Public so the plugin can key its in-flight request map the same way the
+  // cache keys entries, without duplicating the hashing rule.
+  public static generateKeyHash(username: string, password: string) {
     const sha = Crypto.createHash('sha256');
     sha.update(JSON.stringify({ username: username, password: password }));
     return sha.digest('hex');
@@ -35,11 +37,11 @@ export class AuthCache {
   }
 
   public findUser(username: string, password: string): UserData {
-    return this.storage.get(AuthCache._generateKeyHash(username, password)) as UserData;
+    return this.storage.get(AuthCache.generateKeyHash(username, password)) as UserData;
   }
 
   public storeUser(username: string, password: string, userData: UserData): boolean {
-    return this.storage.set(AuthCache._generateKeyHash(username, password), userData);
+    return this.storage.set(AuthCache.generateKeyHash(username, password), userData);
   }
 }
 

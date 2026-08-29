@@ -38,12 +38,22 @@ const BUILTIN_ACCESS_LEVEL_ANONYMOUS = ['$anonymous', '$all'];
 // Level to apply on 'allow_access' calls when a package definition does not define one
 const DEFAULT_ALLOW_ACCESS_LEVEL = ['$all'];
 
+// Page size for the group and project queries. The GitLab API defaults to 20
+// and caps at 100, and the library passes this straight through to the query
+// string. On an instance with a few hundred projects this is the difference
+// between roughly 32 requests per login and roughly 7.
+const GITLAB_PAGE_SIZE = 100;
+
 export default class VerdaccioGitLab implements IPluginAuth<VerdaccioGitlabConfig> {
   private options: PluginOptions<VerdaccioGitlabConfig>;
   private config: VerdaccioGitlabConfig;
   private authCache?: AuthCache;
   private logger: Logger;
   private publishLevel: VerdaccioGitlabAccessLevel;
+  // Walks that are currently running, keyed by credentials. The auth cache is
+  // only written once a walk finishes, so without this every request that
+  // arrives while one is in flight starts its own walk against gitlab.
+  private inflightWalks: Map<string, Promise<string[]>> = new Map();
 
   public constructor(config: VerdaccioGitlabConfig, options: PluginOptions<VerdaccioGitlabConfig>) {
     this.logger = options.logger;
@@ -84,15 +94,45 @@ export default class VerdaccioGitLab implements IPluginAuth<VerdaccioGitlabConfi
     // Not found in cache, query gitlab
     this.logger.trace(`[gitlab] user: ${user} not found in cache`);
 
+    // A burst of npm requests arrives faster than one walk completes, so join
+    // an already running walk for the same credentials instead of starting
+    // another. Without this the cache never gets the chance to help.
+    const walkKey = AuthCache.generateKeyHash(user, password);
+    let walk = this.inflightWalks.get(walkKey);
+
+    if (walk) {
+      this.logger.trace(`[gitlab] user: ${user} joining gitlab query already in flight`);
+    } else {
+      walk = this._queryUserGroups(user, password);
+      this.inflightWalks.set(walkKey, walk);
+
+      // Release the slot on success and on failure alike, so a rejected walk
+      // is never replayed to later logins.
+      const release = () => {
+        this.inflightWalks.delete(walkKey);
+      };
+      walk.then(release, release);
+    }
+
+    walk.then(
+      realGroups => cb(null, realGroups),
+      error => cb(error)
+    );
+  }
+
+  // Resolves to the groups the user may publish to, or rejects with the
+  // verdaccio error to hand back. Split out of authenticate() so that a single
+  // walk can be shared by concurrent logins.
+  private _queryUserGroups(user: string, password: string): Promise<string[]> {
     const GitlabAPI = new Gitlab({
       url: this.config.url,
       token: password,
     });
 
-    GitlabAPI.Users.current()
-      .then(response => {
+    return GitlabAPI.Users.current().then(
+      response => {
         if (user.toLowerCase() !== response.username.toLowerCase()) {
-          return cb(getUnauthorized('wrong gitlab username'));
+          return Promise.reject(getUnauthorized('wrong gitlab username'));
         }
 
         const publishLevelId = ACCESS_LEVEL_MAPPING[this.publishLevel];
@@ -100,7 +140,7 @@ export default class VerdaccioGitLab implements IPluginAuth<VerdaccioGitlabConfi
         // Set the groups of an authenticated user, in normal mode:
         // - for access, depending on the package settings in verdaccio
         // - for publish, the logged in user id and all the groups they can reach as configured with access level `$auth.gitlab.publish`
-        const gitlabPublishQueryParams = { min_access_level: publishLevelId };
+        const gitlabPublishQueryParams = { min_access_level: publishLevelId, per_page: GITLAB_PAGE_SIZE };
 
         this.logger.trace('[gitlab] querying gitlab user groups with params:', gitlabPublishQueryParams.toString());
 
@@ -112,25 +152,27 @@ export default class VerdaccioGitLab implements IPluginAuth<VerdaccioGitlabConfi
           return projects.map(project => project.path_with_namespace);
         });
 
-        Promise.all([groupsPromise, projectsPromise])
-          .then(([groups, projectGroups]) => {
+        return Promise.all([groupsPromise, projectsPromise]).then(
+          ([groups, projectGroups]) => {
             const realGroups = [user, ...groups, ...projectGroups];
             this._setCachedUserGroups(user, password, { publish: realGroups });
 
             this.logger.info(`[gitlab] user: ${user} successfully authenticated`);
             this.logger.debug(`[gitlab] user: ${user}, with groups:`, realGroups.toString());
 
-            return cb(null, realGroups);
-          })
-          .catch(error => {
+            return realGroups;
+          },
+          error => {
             this.logger.error(`[gitlab] user: ${user} error querying gitlab: ${error}`);
-            return cb(getUnauthorized('error authenticating user'));
-          });
-      })
-      .catch(error => {
+            return Promise.reject(getUnauthorized('error authenticating user'));
+          }
+        );
+      },
+      error => {
         this.logger.error(`[gitlab] user: ${user} error querying gitlab user data: ${error.message || {}}`);
-        return cb(getUnauthorized('error authenticating user'));
-      });
+        return Promise.reject(getUnauthorized('error authenticating user'));
+      }
+    );
   }
 
   public adduser(user: string, password: string, cb: Callback) {
