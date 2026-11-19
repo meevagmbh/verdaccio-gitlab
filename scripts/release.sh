@@ -1,6 +1,7 @@
 #!/bin/sh
 # Cut a release: bump the version, prepend the release notes to CHANGELOG.md,
-# commit both, tag vX.Y.Z and push the branch together with the tag.
+# commit both, tag vX.Y.Z and push the branch together with the tag to the
+# remote of package.json#repository (see scripts/release-remote.sh).
 #
 # Usage: scripts/release.sh major|minor|patch
 # Run it through yarn (yarn release:<bump>) so the conventional-changelog
@@ -20,6 +21,10 @@ if [ -n "$(git status --porcelain)" ]; then
   echo "release: working tree is not clean, commit or stash first" >&2
   exit 1
 fi
+
+# Find the push remote before changing anything, so a clone without a remote
+# for the fork fails here and not after the release commit.
+remote="$(sh scripts/release-remote.sh)"
 
 # Undo the version bump and the changelog update if a step before the commit
 # fails, so a failed release leaves the working tree clean again.
@@ -47,4 +52,4 @@ git commit -m "chore(release): $tag"
 committed=true
 git tag -a "$tag" -m "$tag"
 
-git push --atomic origin HEAD "refs/tags/$tag"
+git push --atomic "$remote" HEAD "refs/tags/$tag"
