@@ -6,7 +6,7 @@
   },
   "scripts": {
     "type-check": "tsc --noEmit",
-    "license": "license-checker --onlyAllow 'Apache-2.0; Apache License, Version 2.0; BSD; BSD-2-Clause; BSD-3-Clause; ISC; MIT; Unlicense; WTFPL; CC-BY-3.0; CC0-1.0' --production --summary",
+    "license": "license-checker --onlyAllow 'Apache-2.0; Apache License, Version 2.0; BlueOak-1.0.0; BSD; BSD-2-Clause; BSD-3-Clause; ISC; MIT; Unlicense; WTFPL; CC-BY-3.0; CC0-1.0' --production --summary",
     "type-check:watch": "npm run type-check -- --watch",
     "lint:ts": "eslint .",
     "lint": "yarn type-check && yarn lint:ts && markdownlint README.md",
@@ -49,10 +49,9 @@
     "node": ">=24"
   },
   "dependencies": {
-    "@verdaccio/commons-api": "^8.5.0",
+    "@verdaccio/core": "8.4.0",
     "gitlab": "3.5.1",
     "global-tunnel-ng": "2.5.3",
-    "http-errors": "1.7.3",
     "node-cache": "4.2.0"
   },
   "devDependencies": {
@@ -66,11 +65,10 @@
     "@commitlint/config-conventional": "^8.3.3",
     "@commitlint/travis-cli": "^8.3.3",
     "@eslint/js": "10.0.1",
-    "@types/http-errors": "^1.6.3",
     "@types/jest": "30.0.0",
     "@types/lodash": "^4.14.149",
     "@types/node": "24.19.2",
-    "@verdaccio/types": "^8.5.0",
+    "@verdaccio/types": "13.1.0",
     "body-parser": "^1.19.0",
     "cross-env": "^6.0.3",
     "eslint": "10.14.0",
@@ -91,7 +89,7 @@
     "rimraf": "^3.0.0",
     "typescript": "6.0.3",
     "typescript-eslint": "8.72.2",
-    "verdaccio": "^4.3.4"
+    "verdaccio": "6.11.1"
   },
   "commitlint": {
     "extends": [
@@ -113,7 +111,12 @@
           }
         }
       ],
-      "@babel/preset-typescript"
+      [
+        "@babel/preset-typescript",
+        {
+          "allowDeclareFields": true
+        }
+      ]
     ]
   },
   "packageManager": "yarn@4.18.1"

@@ -1,8 +1,8 @@
 // Copyright 2018 Roger Meier <roger@bufferoverflow.ch>
 // SPDX-License-Identifier: MIT
 
-import { Callback, IPluginAuth, Logger, PluginOptions, RemoteUser, PackageAccess } from '@verdaccio/types';
-import { getInternalError, getUnauthorized, getForbidden } from '@verdaccio/commons-api';
+import { errorUtils, pluginUtils } from '@verdaccio/core';
+import { Callback, Logger, RemoteUser, PackageAccess } from '@verdaccio/types';
 import Gitlab from 'gitlab';
 
 import { UserDataGroups } from './authcache';
@@ -44,9 +44,12 @@ const DEFAULT_ALLOW_ACCESS_LEVEL = ['$all'];
 // between roughly 32 requests per login and roughly 7.
 const GITLAB_PAGE_SIZE = 100;
 
-export default class VerdaccioGitLab implements IPluginAuth<VerdaccioGitlabConfig> {
-  private options: PluginOptions<VerdaccioGitlabConfig>;
-  private config: VerdaccioGitlabConfig;
+export default class VerdaccioGitLab
+  extends pluginUtils.Plugin<VerdaccioGitlabConfig>
+  implements pluginUtils.Auth<VerdaccioGitlabConfig>
+{
+  // The base class stores config and options; this narrows config from unknown.
+  declare public readonly config: VerdaccioGitlabConfig;
   private authCache?: AuthCache;
   private logger: Logger;
   private publishLevel: VerdaccioGitlabAccessLevel;
@@ -55,10 +58,9 @@ export default class VerdaccioGitLab implements IPluginAuth<VerdaccioGitlabConfi
   // arrives while one is in flight starts its own walk against gitlab.
   private inflightWalks: Map<string, Promise<string[]>> = new Map();
 
-  public constructor(config: VerdaccioGitlabConfig, options: PluginOptions<VerdaccioGitlabConfig>) {
+  public constructor(config: VerdaccioGitlabConfig, options: pluginUtils.PluginOptions) {
+    super(config, options);
     this.logger = options.logger;
-    this.config = config;
-    this.options = options;
     this.logger.info(`[gitlab] url: ${this.config.url}`);
 
     if ((this.config.authCache || {}).enabled === false) {
@@ -132,7 +134,7 @@ export default class VerdaccioGitLab implements IPluginAuth<VerdaccioGitlabConfi
     return GitlabAPI.Users.current().then(
       response => {
         if (user.toLowerCase() !== response.username.toLowerCase()) {
-          return Promise.reject(getUnauthorized('wrong gitlab username'));
+          return Promise.reject(errorUtils.getUnauthorized('wrong gitlab username'));
         }
 
         const publishLevelId = ACCESS_LEVEL_MAPPING[this.publishLevel];
@@ -164,13 +166,13 @@ export default class VerdaccioGitLab implements IPluginAuth<VerdaccioGitlabConfi
           },
           error => {
             this.logger.error(`[gitlab] user: ${user} error querying gitlab: ${error}`);
-            return Promise.reject(getUnauthorized('error authenticating user'));
+            return Promise.reject(errorUtils.getUnauthorized('error authenticating user'));
           }
         );
       },
       error => {
         this.logger.error(`[gitlab] user: ${user} error querying gitlab user data: ${error.message || {}}`);
-        return Promise.reject(getUnauthorized('error authenticating user'));
+        return Promise.reject(errorUtils.getUnauthorized('error authenticating user'));
       }
     );
   }
@@ -182,7 +184,7 @@ export default class VerdaccioGitLab implements IPluginAuth<VerdaccioGitlabConfi
 
   public changePassword(user: string, password: string, newPassword: string, cb: Callback) {
     this.logger.trace(`[gitlab] changePassword called for user: ${user}`);
-    return cb(getInternalError('You are using verdaccio-gitlab integration. Please change your password in gitlab'));
+    return cb(errorUtils.getInternalError('You are using verdaccio-gitlab integration. Please change your password in gitlab'));
   }
 
   public allow_access(user: RemoteUser, _package: VerdaccioGitlabPackageAccess & PackageAccess, cb: Callback) {
@@ -201,7 +203,7 @@ export default class VerdaccioGitLab implements IPluginAuth<VerdaccioGitlabConfi
         return cb(null, true);
       } else {
         this.logger.debug(`[gitlab] deny access to package: ${_package.name}`);
-        return cb(getUnauthorized('access denied, user not authenticated and anonymous access disabled'));
+        return cb(errorUtils.getUnauthorized('access denied, user not authenticated and anonymous access disabled'));
       }
     }
   }
@@ -236,7 +238,7 @@ export default class VerdaccioGitLab implements IPluginAuth<VerdaccioGitlabConfi
       this.logger.debug(`[gitlab] user: ${user.name || ''} denied from publishing package: ${_package.name}`);
       // @ts-ignore
       const missingPerm = _package.name.indexOf('@') === 0 ? 'package-scope' : 'package-name';
-      return cb(getForbidden(`must have required permissions: ${this.publishLevel || ''} at ${missingPerm}`));
+      return cb(errorUtils.getForbidden(`must have required permissions: ${this.publishLevel || ''} at ${missingPerm}`));
     }
   }
 
