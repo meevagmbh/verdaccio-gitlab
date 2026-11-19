@@ -91,7 +91,7 @@
     "pinst": "3.0.0",
     "prettier": "^1.19.1",
     "request": "^2.88.2",
-    "rimraf": "^3.0.0",
+    "rimraf": "^6.1.4",
     "typescript": "6.0.3",
     "typescript-eslint": "8.72.2",
     "verdaccio": "6.11.1"
