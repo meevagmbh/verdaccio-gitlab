@@ -4,6 +4,7 @@ import VerdaccioGitlab from '../../src/gitlab';
 import { FailedLoginLimiter } from '../../src/login-limiter';
 
 import config from './partials/config';
+import logger from './partials/logger';
 
 // Failed logins per user name are limited, so guessing tokens or stuffing
 // leaked credentials cannot hammer GitLab through verdaccio. Only GitLab
@@ -92,5 +93,41 @@ describe('Gitlab Auth Plugin failed login limit', () => {
     expect(result.status).toBe(401);
     expect(result.message).toBe(first.message);
     expect(calls.usersCurrent).not.toHaveBeenCalled();
+  });
+});
+
+describe('Gitlab Auth Plugin failed login limit configuration', () => {
+  function create(failedLogins: unknown): VerdaccioGitlab {
+    return new VerdaccioGitlab({ ...config.verdaccioGitlabConfig, failedLogins } as any, config.options);
+  }
+
+  beforeEach(() => {
+    vi.mocked(logger.warn).mockClear();
+  });
+
+  test('blocks after the configured number of distinct failed logins', async () => {
+    const plugin = create({ maxFailures: 3 });
+
+    await failDistinct(plugin, 2);
+    expect((await authenticate(plugin, config.user, 'wrong-third')).status).toBe(401);
+
+    expect((await authenticate(plugin, config.user, config.pass)).status).toBe(429);
+  });
+
+  test('reports the configured limit and window when it blocks a user', async () => {
+    const plugin = create({ maxFailures: 2, windowSeconds: 60 });
+
+    await failDistinct(plugin, 2);
+
+    expect(logger.warn).toHaveBeenCalledWith(expect.objectContaining({ max: 2, window: 60 }), expect.stringMatching(/blocked after/));
+  });
+
+  test.each([0, -1, 2.5, 'ten', null])('falls back to the defaults with a warning for maxFailures %j', async (maxFailures) => {
+    const plugin = create({ maxFailures, windowSeconds: maxFailures });
+
+    expect(logger.warn).toHaveBeenCalledWith(expect.stringMatching(/failedLogins\.maxFailures/));
+    expect(logger.warn).toHaveBeenCalledWith(expect.stringMatching(/failedLogins\.windowSeconds/));
+    await failDistinct(plugin, MAX - 1);
+    expect((await authenticate(plugin, config.user, 'wrong-last')).status).toBe(401);
   });
 });

@@ -26,6 +26,11 @@ export type VerdaccioGitlabConfig = {
   // Minimum GitLab role on the matching group or project to read a package.
   access?: VerdaccioGitlabAccessLevel;
   publish?: VerdaccioGitlabAccessLevel;
+  // Limit for logins GitLab rejects, per user name.
+  failedLogins?: {
+    maxFailures?: number;
+    windowSeconds?: number;
+  };
 };
 
 export interface VerdaccioGitlabPackageAccess extends PackageAccess {
@@ -86,6 +91,29 @@ function packageCandidates(packageName: string): string[] {
   return candidates;
 }
 
+// The configured role, or the default when none is set. An unknown role is a
+// configuration error, so verdaccio does not start with it.
+function accessLevel(option: string, value: VerdaccioGitlabAccessLevel | undefined, fallback: VerdaccioGitlabAccessLevel): VerdaccioGitlabAccessLevel {
+  const level = value || fallback;
+  if (!Object.keys(ACCESS_LEVEL_MAPPING).includes(level)) {
+    throw Error(`[gitlab] invalid access level for auth.gitlab.${option}: ${level}`);
+  }
+  return level;
+}
+
+// The configured count, or the default with a warning when it is not a
+// positive whole number, as for authCache.ttl.
+function positiveInteger(logger: Logger, option: string, value: unknown, fallback: number): number {
+  if (value === undefined) {
+    return fallback;
+  }
+  if (typeof value !== 'number' || !Number.isInteger(value) || value <= 0) {
+    logger.warn(`[gitlab] auth.gitlab.${option} must be a positive whole number, got ${JSON.stringify(value)}; using ${fallback}`);
+    return fallback;
+  }
+  return value;
+}
+
 function missingPermission(packageName: string): string {
   return packageName.startsWith('@') ? 'package-scope' : 'package-name';
 }
@@ -105,7 +133,7 @@ export default class VerdaccioGitLab extends pluginUtils.Plugin<VerdaccioGitlabC
   // only written once a walk finishes, so without this every request that
   // arrives while one is in flight starts its own walk against gitlab.
   private inflightWalks: Map<string, Promise<string[]>> = new Map();
-  private loginLimiter: FailedLoginLimiter = new FailedLoginLimiter();
+  private loginLimiter: FailedLoginLimiter;
 
   public constructor(config: VerdaccioGitlabConfig, options: pluginUtils.PluginOptions) {
     super(config, options);
@@ -122,21 +150,20 @@ export default class VerdaccioGitLab extends pluginUtils.Plugin<VerdaccioGitlabC
       this.logger.info(`[gitlab] initialized auth cache with ttl: ${this.authCache.ttl} seconds`);
     }
 
-    this.publishLevel = '$maintainer';
-    if (this.config.publish) {
-      this.publishLevel = this.config.publish;
-    }
-
-    if (!Object.keys(ACCESS_LEVEL_MAPPING).includes(this.publishLevel)) {
-      throw Error(`[gitlab] invalid publish access level configuration: ${this.publishLevel}`);
-    }
+    this.publishLevel = accessLevel('publish', this.config.publish, '$maintainer');
     this.logger.info(`[gitlab] publish control level: ${this.publishLevel}`);
 
-    this.accessLevel = this.config.access || '$reporter';
-    if (!Object.keys(ACCESS_LEVEL_MAPPING).includes(this.accessLevel)) {
-      throw Error(`[gitlab] invalid access level configuration: ${this.accessLevel}`);
-    }
+    this.accessLevel = accessLevel('access', this.config.access, '$reporter');
     this.logger.info(`[gitlab] access control level: ${this.accessLevel}`);
+
+    const failedLogins = this.config.failedLogins || {};
+    this.loginLimiter = new FailedLoginLimiter(
+      positiveInteger(this.logger, 'failedLogins.maxFailures', failedLogins.maxFailures, FailedLoginLimiter.DEFAULT_MAX_FAILURES),
+      positiveInteger(this.logger, 'failedLogins.windowSeconds', failedLogins.windowSeconds, FailedLoginLimiter.DEFAULT_WINDOW_SECONDS)
+    );
+    this.logger.info(
+      `[gitlab] failed login limit: ${this.loginLimiter.maxFailures} rejected tokens per user name within ${this.loginLimiter.windowSeconds} seconds`
+    );
   }
 
   // Every user's GitLab token goes to this url, so it has to use TLS unless
@@ -222,7 +249,7 @@ export default class VerdaccioGitLab extends pluginUtils.Plugin<VerdaccioGitlabC
   private _recordRejectedLogin(user: string, credentialHash: string, message: string): void {
     if (this.loginLimiter.recordFailure(user, credentialHash, message)) {
       this.logger.warn(
-        { user: logSafe(user), max: FailedLoginLimiter.DEFAULT_MAX_FAILURES, window: FailedLoginLimiter.DEFAULT_WINDOW_SECONDS },
+        { user: logSafe(user), max: this.loginLimiter.maxFailures, window: this.loginLimiter.windowSeconds },
         '[gitlab] user: @{user} blocked after @{max} failed logins, for up to @{window} seconds'
       );
     }
