@@ -193,19 +193,24 @@ auth:
     authCache:
       enabled: <boolean>
       ttl: <integer>
+    failedLogins:
+      maxFailures: <integer>
+      windowSeconds: <integer>
     publish: <string>
 ```
 
 <!-- markdownlint-disable MD013 -->
 
-| Option               | Default       | Type                                                           | Description                                                                                                                                      |
-| -------------------- | ------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `url`                | `<empty>`     | url                                                            | mandatory, the url of the gitlab server; must use `https`                                                                                        |
-| `allowInsecureHttp`  | `false`       | boolean                                                        | accept an `http` url; users' GitLab tokens then cross the network unencrypted, so only use it for a GitLab on the same host or a trusted network |
-| `authCache: enabled` | `true`        | boolean                                                        | activate in-memory authentication cache                                                                                                          |
-| `authCache: ttl`     | `300`         | integer                                                        | time-to-live of entries in the authentication cache, in seconds; must be positive                                                                |
-| `access`             | `$reporter`   | [`$guest`, `$reporter`, `$developer`, `$maintainer`, `$owner`] | minimum GitLab role on the matching group or project to read packages in sections with `gitlab: true` that are not public                        |
-| `publish`            | `$maintainer` | [`$guest`, `$reporter`, `$developer`, `$maintainer`, `$owner`] | group minimum access level of the logged in user required for npm publish operations                                                             |
+| Option                        | Default       | Type                                                           | Description                                                                                                                                      |
+| ----------------------------- | ------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `url`                         | `<empty>`     | url                                                            | mandatory, the url of the gitlab server; must use `https`                                                                                        |
+| `allowInsecureHttp`           | `false`       | boolean                                                        | accept an `http` url; users' GitLab tokens then cross the network unencrypted, so only use it for a GitLab on the same host or a trusted network |
+| `authCache: enabled`          | `true`        | boolean                                                        | activate in-memory authentication cache                                                                                                          |
+| `authCache: ttl`              | `300`         | integer                                                        | time-to-live of entries in the authentication cache, in seconds; must be positive                                                                |
+| `failedLogins: maxFailures`   | `10`          | integer                                                        | rejected tokens per user name after which new logins of that user name are refused (see [Failed Logins](#failed-logins)); must be positive       |
+| `failedLogins: windowSeconds` | `300`         | integer                                                        | how long, in seconds from the first rejected token, the count and the block last; must be positive                                               |
+| `access`                      | `$reporter`   | [`$guest`, `$reporter`, `$developer`, `$maintainer`, `$owner`] | minimum GitLab role on the matching group or project to read packages in sections with `gitlab: true` that are not public                        |
+| `publish`                     | `$maintainer` | [`$guest`, `$reporter`, `$developer`, `$maintainer`, `$owner`] | group minimum access level of the logged in user required for npm publish operations                                                             |
 
 <!-- markdownlint-enable MD013 -->
 
@@ -235,12 +240,16 @@ the least recently used entry is dropped.
 
 ## Failed Logins
 
-Once GitLab has rejected 10 different tokens for one user name within
-300 seconds, further logins with new credentials for that user name are
-answered with `429 Too Many Requests` for the rest of the 300 seconds,
-without asking GitLab. A token GitLab has already rejected is refused
-again without asking GitLab, so a client retrying one expired token does
-not count against the limit. A successful login clears the count.
+Once GitLab has rejected `failedLogins.maxFailures` (default 10) different
+tokens for one user name within `failedLogins.windowSeconds` (default 300),
+further logins with new credentials for that user name are answered with
+`429 Too Many Requests` for the rest of that window, without asking GitLab.
+A token GitLab has already rejected is refused again without asking GitLab,
+so a client retrying one expired token does not count against the limit.
+A successful login clears the count.
+
+Values that are not positive whole numbers fall back to the defaults with a
+warning.
 
 Only rejected tokens count (GitLab answering 401 or 403, or a token that
 belongs to another GitLab user). GitLab being unreachable or overloaded
@@ -248,7 +257,7 @@ does not.
 
 > _Please note_ that verdaccio passes the plugin neither the client
 > address nor the request, so the limit applies per user name: someone who
-> knows a user name can block new logins for it for up to 300 seconds.
+> knows a user name can block new logins for it for up to one window.
 > Logins already in the authentication cache keep working. Like the cache,
 > the count is per process. To limit requests per client address, set
 > verdaccio's own `userRateLimit` and put a rate limit in the reverse proxy.

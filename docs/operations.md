@@ -39,7 +39,7 @@ How often step 2–4 run depends on verdaccio's token setting:
 | `[gitlab] user: … error querying gitlab user data: …`                                | log, level `error`                | GitLab unreachable, timed out or failing               | more than a few per 5 minutes |
 | `[gitlab] user: … error querying gitlab: …`                                          | log, level `error`                | GitLab failed while listing groups or projects         | more than a few per 5 minutes |
 | `GitLab answered 429 to … attempts within the 5000 ms retry window`                  | inside the error lines above      | GitLab rate-limits the registry                        | any                           |
-| `[gitlab] user: … blocked after 10 failed logins …`                                  | log, level `warn`                 | a user name hit the failed-login limit                 | any                           |
+| `[gitlab] user: … blocked after … failed logins …`                                   | log, level `warn`                 | a user name hit the failed-login limit                 | any                           |
 | `[gitlab] login as user: … rejected …`                                               | log, level `warn`                 | GitLab rejected a token, or it belongs to another user | high rate only                |
 | `[gitlab] user: … denied access to package: …` / `denied from publishing package: …` | log, level `warn`                 | a role is missing                                      | none; use for support         |
 
@@ -79,8 +79,9 @@ gives up.
 
 ### A user gets `429 too many failed logins, try again later`
 
-GitLab rejected 10 different tokens for this user name within 300 seconds.
-The block lifts by itself 300 seconds after the first failure.
+GitLab rejected `failedLogins.maxFailures` (default 10) different tokens for
+this user name within `failedLogins.windowSeconds` (default 300). The block
+lifts by itself one window after the first failure.
 
 1. Have the user create a fresh token with the `read_api` scope and log in
    again with exactly the GitLab user name.

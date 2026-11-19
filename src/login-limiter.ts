@@ -13,7 +13,8 @@ export class FailedLoginLimiter {
   // User names are chosen by the client, so the state must stay bounded.
   public static readonly DEFAULT_MAX_ENTRIES = 10_000;
 
-  private readonly maxFailures: number;
+  public readonly maxFailures: number;
+  public readonly windowSeconds: number;
   // Lower-cased user name to the hashes of credentials GitLab rejected, each
   // with the message it was rejected with. The window runs from the first
   // failure and is not extended by later ones.
@@ -25,6 +26,7 @@ export class FailedLoginLimiter {
     maxEntries: number = FailedLoginLimiter.DEFAULT_MAX_ENTRIES
   ) {
     this.maxFailures = maxFailures;
+    this.windowSeconds = windowSeconds;
     this.failures = new LRUCache<string, Map<string, string>>({ max: maxEntries, ttl: windowSeconds * 1000, ttlAutopurge: true });
   }
 
