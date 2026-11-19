@@ -57,5 +57,14 @@ export default (server: any, _gitlab: any) => {
           expect(body.success).toBe(true);
         });
     });
+
+    test('should deny publish to a group where the user is only a reporter', () => {
+      return server
+        .putPackage(PACKAGE.READ_ONLY_SCOPED_NAME, fixturePkg(PACKAGE.READ_ONLY_SCOPED_NAME))
+        .status(HTTP_STATUS.FORBIDDEN)
+        .then((body) => {
+          expect(body.error).toMatch(/permissions/);
+        });
+    });
   });
 };

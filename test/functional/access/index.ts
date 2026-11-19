@@ -1,4 +1,4 @@
-import { CREDENTIALS, PACKAGE } from '../config.functional';
+import { CREDENTIALS, PACKAGE, UPLINK_STUB_DESCRIPTION } from '../config.functional';
 import { API_ERROR, HTTP_STATUS } from '../../lib/constants';
 import fixturePkg from '../fixtures/package';
 
@@ -15,7 +15,16 @@ export default (server: any, _gitlab: any) => {
         .then((body) => {
           expect(body).toHaveProperty('name');
           expect(body.name).toBe(PACKAGE.EXISTING_NAME);
+          // Served by the local uplink stub, not by registry.npmjs.org.
+          const latest = body['dist-tags'].latest;
+          expect(body.versions[latest].description).toBe(UPLINK_STUB_DESCRIPTION);
         });
+    });
+
+    // A reporter role is below auth.gitlab.publish ($maintainer) but meets
+    // auth.gitlab.access ($reporter); 404 shows the read check passed.
+    test('should allow a reporter of a group to read its private packages', () => {
+      return server.getPackage(PACKAGE.READ_ONLY_SCOPED_NAME).status(HTTP_STATUS.NOT_FOUND);
     });
 
     // 404 shows the read check passed and the package is just missing.

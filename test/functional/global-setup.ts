@@ -12,6 +12,7 @@ import Server from '../lib/server';
 
 import { DOMAIN_SERVERS } from './config.functional';
 import GitlabServer from './lib/mock_gitlab_server';
+import UplinkServer from './lib/mock_uplink_server';
 
 declare module 'vitest' {
   export interface ProvidedContext {
@@ -33,10 +34,11 @@ function freePort(): Promise<number> {
 }
 
 // Writes a copy of the stored verdaccio config with the run's GitLab mock
-// port, an absolute storage path and a plugins folder that links this
+// port, the uplink stub's port instead of registry.npmjs.org, an absolute
+// storage path and a plugins folder that links this
 // checkout as `verdaccio-gitlab`. Verdaccio then loads the plugin whatever
 // the checkout directory is called.
-function writeRunConfig(storeDir: string, configName: string, storagePath: string, gitlabPort: number): string {
+function writeRunConfig(storeDir: string, configName: string, storagePath: string, gitlabPort: number, uplinkPort: number): string {
   const runDir = fs.mkdtempSync(path.join(os.tmpdir(), 'verdaccio-gitlab-functional-'));
   const pluginsDir = path.join(runDir, 'plugins');
   fs.mkdirSync(pluginsDir);
@@ -45,6 +47,7 @@ function writeRunConfig(storeDir: string, configName: string, storagePath: strin
   const replacements: Array<[RegExp, string]> = [
     [/^storage: .*$/m, `storage: ${JSON.stringify(storagePath)}`],
     [/url: http:\/\/localhost:\d+\//, `url: http://localhost:${gitlabPort}/`],
+    [/url: https:\/\/registry\.npmjs\.org\//, `url: http://localhost:${uplinkPort}/`],
   ];
   let yaml = fs.readFileSync(path.join(storeDir, configName), 'utf8');
   for (const [pattern, value] of replacements) {
@@ -80,11 +83,13 @@ export default async function setup(project: TestProject) {
 
   const gitlab: any = await new GitlabServer().start(0);
   const gitlabPort = (gitlab.server.address() as net.AddressInfo).port;
+  const uplink = await new UplinkServer().start(0);
+  const uplinkPort = (uplink.server.address() as net.AddressInfo).port;
 
   for (const config of listServers) {
     const port = await freePort();
     const storagePath = path.join(pathStore, config.storage);
-    const configPath = writeRunConfig(pathStore, config.config, storagePath, gitlabPort);
+    const configPath = writeRunConfig(pathStore, config.config, storagePath, gitlabPort, uplinkPort);
     runDirs.push(path.dirname(configPath));
     const verdaccioConfig = new VerdaccioConfig(storagePath, configPath, `http://${DOMAIN_SERVERS}:${port}/`, port);
     console.log(magenta(`Running registry ${config.config} on port ${port}`));
@@ -105,6 +110,7 @@ export default async function setup(project: TestProject) {
     }
     // close web server
     gitlab.server.close();
+    uplink.server.close();
     for (const dir of runDirs) {
       fs.rmSync(dir, { recursive: true, force: true });
     }
