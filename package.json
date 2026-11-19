@@ -87,7 +87,7 @@
     "kleur": "3.0.3",
     "license-checker": "^25.0.1",
     "lodash": "^4.18.1",
-    "markdownlint-cli": "^0.20.0",
+    "markdownlint-cli": "^0.50.0",
     "pinst": "3.0.0",
     "prettier": "^1.19.1",
     "request": "^2.88.0",
