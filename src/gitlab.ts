@@ -90,10 +90,7 @@ function missingPermission(packageName: string): string {
   return packageName.startsWith('@') ? 'package-scope' : 'package-name';
 }
 
-export default class VerdaccioGitLab
-  extends pluginUtils.Plugin<VerdaccioGitlabConfig>
-  implements pluginUtils.Auth<VerdaccioGitlabConfig>
-{
+export default class VerdaccioGitLab extends pluginUtils.Plugin<VerdaccioGitlabConfig> implements pluginUtils.Auth<VerdaccioGitlabConfig> {
   // The base class stores config and options; this narrows config from unknown.
   declare public readonly config: VerdaccioGitlabConfig;
   private authCache?: AuthCache;
@@ -124,7 +121,6 @@ export default class VerdaccioGitLab
       this.authCache = new AuthCache(this.logger, (this.config.authCache || {}).ttl);
       this.logger.info(`[gitlab] initialized auth cache with ttl: ${this.authCache.ttl} seconds`);
     }
-
 
     this.publishLevel = '$maintainer';
     if (this.config.publish) {
@@ -214,8 +210,8 @@ export default class VerdaccioGitLab
     }
 
     walk.then(
-      realGroups => cb(null, realGroups),
-      error => cb(error)
+      (realGroups) => cb(null, realGroups),
+      (error) => cb(error)
     );
   }
 
@@ -241,7 +237,7 @@ export default class VerdaccioGitLab
     const projects = new Projects(clientOptions);
 
     return users.showCurrentUser().then(
-      response => {
+      (response) => {
         if (user.toLowerCase() !== response.username.toLowerCase()) {
           this.logger.warn(
             { user: logSafe(user), gitlabUser: logSafe(response.username) },
@@ -264,10 +260,8 @@ export default class VerdaccioGitLab
           return Promise.all([
             groups
               .all<false, 'offset'>({ ...params, topLevelOnly: true })
-              .then(groupList => groupList.filter(group => group.path === group.full_path).map(group => group.path)),
-            projects
-              .all<false, 'offset'>({ ...params, simple: true })
-              .then(projectList => projectList.map(project => project.path_with_namespace)),
+              .then((groupList) => groupList.filter((group) => group.path === group.full_path).map((group) => group.path)),
+            projects.all<false, 'offset'>({ ...params, simple: true }).then((projectList) => projectList.map((project) => project.path_with_namespace)),
           ]).then(([groupPaths, projectPaths]) => [...groupPaths, ...projectPaths]);
         };
 
@@ -281,8 +275,8 @@ export default class VerdaccioGitLab
             // Publish paths plainly, paths the user may only read marked.
             // Each path appears once, which keeps verdaccio's tokens small.
             const publishable = new Set([user, ...publishPaths]);
-            const readOnly = [...new Set(accessPaths)].filter(path => !publishable.has(path));
-            const realGroups = [...publishable, ...readOnly.map(path => READ_ONLY_PREFIX + path)];
+            const readOnly = [...new Set(accessPaths)].filter((path) => !publishable.has(path));
+            const realGroups = [...publishable, ...readOnly.map((path) => READ_ONLY_PREFIX + path)];
             this._setCachedUserGroups(user, password, { publish: realGroups });
             this.loginLimiter.recordSuccess(user);
 
@@ -294,16 +288,13 @@ export default class VerdaccioGitLab
 
             return realGroups;
           },
-          error => {
-            this.logger.error(
-              { user: logSafe(user), error: logSafe(error?.message) },
-              '[gitlab] user: @{user} error querying gitlab: @{error}'
-            );
+          (error) => {
+            this.logger.error({ user: logSafe(user), error: logSafe(error?.message) }, '[gitlab] user: @{user} error querying gitlab: @{error}');
             return Promise.reject(errorUtils.getUnauthorized(AUTHENTICATION_ERROR));
           }
         );
       },
-      error => {
+      (error) => {
         if (TOKEN_REJECTED_STATUSES.includes(gitlabStatus(error) as number)) {
           this.logger.warn(
             { user: logSafe(user), status: gitlabStatus(error) },
@@ -311,10 +302,7 @@ export default class VerdaccioGitLab
           );
           this._recordRejectedLogin(user, credentialHash, AUTHENTICATION_ERROR);
         } else {
-          this.logger.error(
-            { user: logSafe(user), error: logSafe(error?.message) },
-            '[gitlab] user: @{user} error querying gitlab user data: @{error}'
-          );
+          this.logger.error({ user: logSafe(user), error: logSafe(error?.message) }, '[gitlab] user: @{user} error querying gitlab user data: @{error}');
         }
         return Promise.reject(errorUtils.getUnauthorized(AUTHENTICATION_ERROR));
       }
@@ -338,7 +326,7 @@ export default class VerdaccioGitLab
     const packageAccess = _package.access || [];
     const packageName = _package.name as string;
 
-    if (BUILTIN_ACCESS_LEVEL_ANONYMOUS.some(level => packageAccess.includes(level))) {
+    if (BUILTIN_ACCESS_LEVEL_ANONYMOUS.some((level) => packageAccess.includes(level))) {
       this.logger.debug({ pkg: logSafe(packageName) }, '[gitlab] allow public access to package: @{pkg}');
       return cb(null, true);
     }
@@ -348,19 +336,13 @@ export default class VerdaccioGitLab
       return cb(errorUtils.getUnauthorized('access denied, user not authenticated and anonymous access disabled'));
     }
 
-    const readable = new Set(user.real_groups.map(group => (group.startsWith(READ_ONLY_PREFIX) ? group.slice(READ_ONLY_PREFIX.length) : group)));
-    if (packageCandidates(packageName).some(candidate => readable.has(candidate))) {
-      this.logger.debug(
-        { user: logSafe(user.name), pkg: logSafe(packageName) },
-        '[gitlab] allow user: @{user} access to package: @{pkg}'
-      );
+    const readable = new Set(user.real_groups.map((group) => (group.startsWith(READ_ONLY_PREFIX) ? group.slice(READ_ONLY_PREFIX.length) : group)));
+    if (packageCandidates(packageName).some((candidate) => readable.has(candidate))) {
+      this.logger.debug({ user: logSafe(user.name), pkg: logSafe(packageName) }, '[gitlab] allow user: @{user} access to package: @{pkg}');
       return cb(null, true);
     }
 
-    this.logger.warn(
-      { user: logSafe(user.name), pkg: logSafe(packageName) },
-      '[gitlab] user: @{user} denied access to package: @{pkg}'
-    );
+    this.logger.warn({ user: logSafe(user.name), pkg: logSafe(packageName) }, '[gitlab] user: @{user} denied access to package: @{pkg}');
     return cb(errorUtils.getForbidden(`must have required permissions: ${this.accessLevel} at ${missingPermission(packageName)}`));
   }
 
@@ -369,8 +351,8 @@ export default class VerdaccioGitLab
 
     const packageName = _package.name as string;
     // Only plain entries carry the publish role; marked ones are read-only.
-    const publishable = user.real_groups.filter(group => !group.startsWith(READ_ONLY_PREFIX));
-    const match = packageCandidates(packageName).find(candidate => publishable.includes(candidate));
+    const publishable = user.real_groups.filter((group) => !group.startsWith(READ_ONLY_PREFIX));
+    const match = packageCandidates(packageName).find((candidate) => publishable.includes(candidate));
 
     if (match !== undefined) {
       this.logger.debug(
@@ -380,10 +362,7 @@ export default class VerdaccioGitLab
       return cb(null, true);
     }
 
-    this.logger.warn(
-      { user: logSafe(user.name || ''), pkg: logSafe(packageName) },
-      '[gitlab] user: @{user} denied from publishing package: @{pkg}'
-    );
+    this.logger.warn({ user: logSafe(user.name || ''), pkg: logSafe(packageName) }, '[gitlab] user: @{user} denied from publishing package: @{pkg}');
     return cb(errorUtils.getForbidden(`must have required permissions: ${this.publishLevel || ''} at ${missingPermission(packageName)}`));
   }
 

@@ -44,7 +44,7 @@ describe('Gitlab Auth Plugin client options', () => {
 
     await authenticate(plugin, config.user, config.pass);
 
-    Object.values(constructedOptions()).forEach(options => {
+    Object.values(constructedOptions()).forEach((options) => {
       expect(options.requesterFn).toBe(requesterFn);
     });
   });
@@ -56,7 +56,7 @@ describe('Gitlab Auth Plugin client options', () => {
 
     await authenticate(plugin, config.user, config.pass);
 
-    Object.values(constructedOptions()).forEach(options => {
+    Object.values(constructedOptions()).forEach((options) => {
       expect(options.host).toBe('https://gitlab.example.com/sub');
     });
   });
@@ -68,7 +68,7 @@ describe('Gitlab Auth Plugin client options', () => {
 
     await authenticate(plugin, config.user, config.pass);
 
-    Object.values(constructedOptions()).forEach(options => {
+    Object.values(constructedOptions()).forEach((options) => {
       expect(options.host).toBeUndefined();
     });
   });

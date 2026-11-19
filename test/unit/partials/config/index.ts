@@ -5,14 +5,13 @@ import { UserDataGroups } from '../../../../src/authcache';
 import logger from '../logger';
 import { UserData } from '../../../../src/authcache';
 
-
 const verdaccioGitlabConfig: VerdaccioGitlabConfig = {
-  url: 'https://gitlab.example.com'
+  url: 'https://gitlab.example.com',
 };
 
 const options: PluginOptions<VerdaccioGitlabConfig> = {
-  config:  {},
-  logger: logger
+  config: {},
+  logger: logger,
 };
 
 const user = 'myUser';
@@ -20,11 +19,11 @@ const pass = 'myPass';
 const remoteUser: RemoteUser = {
   real_groups: ['myGroup', 'anotherGroup/myProject', user],
   groups: ['myGroup', 'anotherGroup/myProject', user],
-  name: user
+  name: user,
 };
 
 const userDataGroups: UserDataGroups = {
-  publish: ['fooGroup1', 'fooGroup2']
+  publish: ['fooGroup1', 'fooGroup2'],
 };
 const userData: UserData = new UserData(user, userDataGroups);
 
@@ -34,7 +33,7 @@ const config = {
   user: user,
   pass: pass,
   remoteUser: remoteUser,
-  userData: userData
-}
+  userData: userData,
+};
 
 export default config;

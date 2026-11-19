@@ -1,16 +1,16 @@
 {
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "type": "node",
-            "request": "launch",
-            "name": "Launch verdaccio",
-            "program": "${workspaceFolder}/build/verdaccio.js",
-            "preLaunchTask": "npm: code:build",
-            "env": {
-                "NODE_PATH": "${workspaceFolder}/..",
-                "NODE_ENV": "development"
-            }
-        }
-    ]
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Launch verdaccio",
+      "program": "${workspaceFolder}/build/verdaccio.js",
+      "preLaunchTask": "npm: code:build",
+      "env": {
+        "NODE_PATH": "${workspaceFolder}/..",
+        "NODE_ENV": "development"
+      }
+    }
+  ]
 }

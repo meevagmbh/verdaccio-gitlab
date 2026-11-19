@@ -34,7 +34,7 @@ class FunctionalEnvironment extends TestEnvironment {
         port: PORT_SERVER_1,
         config: '/config-1.yaml',
         storage: '/test-storage1',
-      }
+      },
     ];
     console.log(green('Setup Verdaccio Servers'));
 
@@ -45,7 +45,9 @@ class FunctionalEnvironment extends TestEnvironment {
       const verdaccioConfig = new VerdaccioConfig(
         path.join(pathStore, config.storage),
         path.join(pathStore, config.config),
-        `http://${DOMAIN_SERVERS}:${config.port}/`, config.port);
+        `http://${DOMAIN_SERVERS}:${config.port}/`,
+        config.port
+      );
       console.log(magenta(`Running registry ${config.config} on port ${config.port}`));
       const server: IServerBridge = new Server(verdaccioConfig.domainPath);
       serverList.push(server);
@@ -65,7 +67,7 @@ class FunctionalEnvironment extends TestEnvironment {
     console.log(yellow('Teardown Test Environment.'));
 
     if (!this.global.__SERVERS_PROCESS__) {
-      throw new Error("There are no servers to stop");
+      throw new Error('There are no servers to stop');
     }
 
     // shutdown verdaccio

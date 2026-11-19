@@ -74,7 +74,7 @@ packages:
     proxy: npmjs
 
 # Log level can be changed to info, http etc. for less verbose output
-log: {type: stdout, format: pretty, level: debug}
+log: { type: stdout, format: pretty, level: debug }
 ```
 
 Restart Verdaccio and authenticate into it with your credentials
@@ -105,13 +105,13 @@ element from the config.
 
 ### Access
 
-*access* is allowed if:
+_access_ is allowed if:
 
 1. the package section's `access` contains `$all` or `$anonymous`: the
    section is public, and anyone may read it, even without logging in, or
 2. the user is authenticated and the package name maps to the user's name,
    or to one of the user's GitLab groups or projects, in the same way as for
-   *publish* below.
+   _publish_ below.
 
 For 2., the GitLab user must have at least the role set in
 `auth.gitlab.access` (default `$reporter`) on the group or project. Other
@@ -135,7 +135,7 @@ with very many groups and projects gets large tokens.
 
 ### Publish
 
-*publish* is allowed if:
+_publish_ is allowed if:
 
 1. the package name matches the GitLab username, or
 2. if the package name or scope of the package matches one of the
@@ -163,10 +163,10 @@ The GitLab user `sample_user` has access to:
 
 Then this user would be able to:
 
-- *access* any package in a public section, and in sections with
+- _access_ any package in a public section, and in sections with
   `access: $authenticated` the packages `sample_user`, `group1`, `group2`,
   any package under `@group1/**` or `@group2/**`, and `@group3/project`
-- *publish* any of the following packages:
+- _publish_ any of the following packages:
   - `sample_user`
   - `group1`
   - any package under `@group1/**`
@@ -193,14 +193,16 @@ auth:
 ```
 
 <!-- markdownlint-disable MD013 -->
-| Option | Default | Type | Description |
-| ------ | ------- | ---- | ----------- |
-| `url` | `<empty>` | url | mandatory, the url of the gitlab server; must use `https` |
-| `allowInsecureHttp` | `false` | boolean | accept an `http` url; users' GitLab tokens then cross the network unencrypted, so only use it for a GitLab on the same host or a trusted network |
-| `authCache: enabled` | `true` | boolean | activate in-memory authentication cache |
-| `authCache: ttl` | `300` | integer | time-to-live of entries in the authentication cache, in seconds; must be positive |
-| `access` | `$reporter` | [`$guest`, `$reporter`, `$developer`, `$maintainer`, `$owner`] | minimum GitLab role on the matching group or project to read packages in sections with `gitlab: true` that are not public |
-| `publish` | `$maintainer` | [`$guest`, `$reporter`, `$developer`, `$maintainer`, `$owner`] | group minimum access level of the logged in user required for npm publish operations |
+
+| Option               | Default       | Type                                                           | Description                                                                                                                                      |
+| -------------------- | ------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `url`                | `<empty>`     | url                                                            | mandatory, the url of the gitlab server; must use `https`                                                                                        |
+| `allowInsecureHttp`  | `false`       | boolean                                                        | accept an `http` url; users' GitLab tokens then cross the network unencrypted, so only use it for a GitLab on the same host or a trusted network |
+| `authCache: enabled` | `true`        | boolean                                                        | activate in-memory authentication cache                                                                                                          |
+| `authCache: ttl`     | `300`         | integer                                                        | time-to-live of entries in the authentication cache, in seconds; must be positive                                                                |
+| `access`             | `$reporter`   | [`$guest`, `$reporter`, `$developer`, `$maintainer`, `$owner`] | minimum GitLab role on the matching group or project to read packages in sections with `gitlab: true` that are not public                        |
+| `publish`            | `$maintainer` | [`$guest`, `$reporter`, `$developer`, `$maintainer`, `$owner`] | group minimum access level of the logged in user required for npm publish operations                                                             |
+
 <!-- markdownlint-enable MD013 -->
 
 ## Authentication Cache
@@ -222,10 +224,10 @@ of 300 seconds with a warning, so a token revoked in GitLab stops working
 within one ttl. The cache holds at most 10000 entries; when it is full,
 the least recently used entry is dropped.
 
-> *Please note* that this implementation is in-memory and not
-multi-process; if the cluster module is used for starting several
-verdaccio processes, each process will store its own copy of the cache,
-so each user will actually be logged in multiple times.
+> _Please note_ that this implementation is in-memory and not
+> multi-process; if the cluster module is used for starting several
+> verdaccio processes, each process will store its own copy of the cache,
+> so each user will actually be logged in multiple times.
 
 ## Failed Logins
 
@@ -240,12 +242,12 @@ Only rejected tokens count (GitLab answering 401 or 403, or a token that
 belongs to another GitLab user). GitLab being unreachable or overloaded
 does not.
 
-> *Please note* that verdaccio passes the plugin neither the client
-address nor the request, so the limit applies per user name: someone who
-knows a user name can block new logins for it for up to 300 seconds.
-Logins already in the authentication cache keep working. Like the cache,
-the count is per process. To limit requests per client address, set
-verdaccio's own `userRateLimit` and put a rate limit in the reverse proxy.
+> _Please note_ that verdaccio passes the plugin neither the client
+> address nor the request, so the limit applies per user name: someone who
+> knows a user name can block new logins for it for up to 300 seconds.
+> Logins already in the authentication cache keep working. Like the cache,
+> the count is per process. To limit requests per client address, set
+> verdaccio's own `userRateLimit` and put a rate limit in the reverse proxy.
 
 ## Docker
 

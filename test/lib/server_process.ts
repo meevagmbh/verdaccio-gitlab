@@ -16,13 +16,7 @@ export default class VerdaccioProcess implements IServerProcess {
   private silence: boolean;
   private cleanStore: boolean;
 
-  public constructor(
-    config: IVerdaccioConfig,
-    bridge: IServerBridge,
-    silence = true,
-    isDebug = false,
-    cleanStore = true
-  ) {
+  public constructor(config: IVerdaccioConfig, bridge: IServerBridge, silence = true, isDebug = false, cleanStore = true) {
     this.config = config;
     this.bridge = bridge;
     this.silence = silence;
@@ -63,13 +57,13 @@ export default class VerdaccioProcess implements IServerProcess {
     const listen = `${DOMAIN_SERVERS}:${port}`;
     this.childFork = fork(verdaccioRegisterWrap, ['-c', configPath, '-l', listen], childOptions);
 
-    this.childFork.on('message', msg => {
+    this.childFork.on('message', (msg) => {
       // verdaccio_started is a message that comes from verdaccio in debug mode that notify has been started
       if ('verdaccio_started' in msg) {
         this.bridge
           .debug()
           .status(HTTP_STATUS.OK)
-          .then(body => {
+          .then((body) => {
             this.bridge
               .auth(CREDENTIALS.user, CREDENTIALS.password)
               .status(HTTP_STATUS.CREATED)
@@ -79,9 +73,9 @@ export default class VerdaccioProcess implements IServerProcess {
       }
     });
 
-    this.childFork.on('error', err => reject([err, this]));
-    this.childFork.on('disconnect', err => reject([err, this]));
-    this.childFork.on('exit', err => reject([err, this]));
+    this.childFork.on('error', (err) => reject([err, this]));
+    this.childFork.on('disconnect', (err) => reject([err, this]));
+    this.childFork.on('exit', (err) => reject([err, this]));
   }
 
   public stop(): void {

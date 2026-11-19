@@ -1,7 +1,6 @@
 import assert from 'assert';
 
 import _ from 'lodash';
-import request from 'request';
 
 import { IRequestPromise } from '../types';
 
@@ -22,7 +21,7 @@ export class PromiseAssert extends Promise<any> implements IRequestPromise {
 
     return injectResponse(
       this,
-      this.then(function(body) {
+      this.then(function (body) {
         try {
           assert.equal(selfData.response.statusCode, expected);
         } catch (err) {
@@ -39,7 +38,7 @@ export class PromiseAssert extends Promise<any> implements IRequestPromise {
 
     return injectResponse(
       this,
-      this.then(function(body) {
+      this.then(function (body) {
         try {
           if (_.isRegExp(expected)) {
             assert(body.ok.match(expected), "'" + body.ok + "' doesn't match " + expected);
@@ -62,7 +61,7 @@ export class PromiseAssert extends Promise<any> implements IRequestPromise {
 
     return injectResponse(
       this,
-      this.then(function(body) {
+      this.then(function (body) {
         try {
           if (_.isRegExp(expected)) {
             assert(body.error.match(expected), body.error + " doesn't match " + expected);
@@ -79,17 +78,12 @@ export class PromiseAssert extends Promise<any> implements IRequestPromise {
     );
   }
 
-  public request(callback: any) {
-    callback(this[requestData].request);
-    return this;
-  }
-
   public response(cb: any) {
     const selfData = this[requestData];
 
     return injectResponse(
       this,
-      this.then(function(body) {
+      this.then(function (body) {
         cb(selfData.response);
         return body;
       })
@@ -97,9 +91,44 @@ export class PromiseAssert extends Promise<any> implements IRequestPromise {
   }
 
   public send(data: any) {
-    this[requestData].request.end(data);
+    this[requestData].body = data;
     return this;
   }
+}
+
+function hasHeader(headers: Record<string, any>, name: string): boolean {
+  return Object.keys(headers).some((key) => key.toLowerCase() === name);
+}
+
+// Mirrors what the request package did with the options this suite passes:
+// a `json` object becomes the JSON body, `json: true` parses the response
+// body as JSON when it can, and `encoding: null` keeps the body a Buffer.
+async function performRequest(options: any, state: any): Promise<any> {
+  const headers = { ...options.headers };
+  let body = state.body;
+
+  if (_.isNil(body) && _.isPlainObject(options.json)) {
+    body = JSON.stringify(options.json);
+    if (!hasHeader(headers, 'content-type')) {
+      headers['content-type'] = 'application/json';
+    }
+  }
+
+  const res = await fetch(options.url, { method: options.method, headers, body });
+  const raw = Buffer.from(await res.arrayBuffer());
+
+  // store the response on symbol, in the shape the assertions read
+  state.response = { statusCode: res.status, headers: Object.fromEntries(res.headers) };
+
+  if (options.json) {
+    try {
+      return JSON.parse(raw.toString('utf8'));
+    } catch {
+      // not JSON: fall through and return the raw body, as request did
+    }
+  }
+
+  return options.encoding === null ? raw : raw.toString(options.encoding || 'utf8');
 }
 
 function smartRequest(options: any): Promise<any> {
@@ -109,16 +138,10 @@ function smartRequest(options: any): Promise<any> {
   smartObject[requestData].error = Error();
   Error.captureStackTrace(smartObject[requestData].error, smartRequest);
 
-  const promiseResult: Promise<any> = new PromiseAssert(function(resolve, reject) {
-    // store request reference on symbol
-    smartObject[requestData].request = request(options, function(err, res, body) {
-      if (err) {
-        return reject(err);
-      }
-
-      // store the response on symbol
-      smartObject[requestData].response = res;
-      resolve(body);
+  const promiseResult: Promise<any> = new PromiseAssert(function (resolve, reject) {
+    // Start on the next microtask, so a chained .send(data) can still set the body.
+    queueMicrotask(() => {
+      performRequest(options, smartObject[requestData]).then(resolve, reject);
     });
   });
 

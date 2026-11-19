@@ -6,6 +6,6 @@ import { pluginUtils } from '@verdaccio/core';
 import VerdaccioGitLab from './gitlab';
 import { VerdaccioGitlabConfig } from './gitlab';
 
-export default function(config: VerdaccioGitlabConfig, options: pluginUtils.PluginOptions) {
+export default function (config: VerdaccioGitlabConfig, options: pluginUtils.PluginOptions) {
   return new VerdaccioGitLab(config, options);
 }

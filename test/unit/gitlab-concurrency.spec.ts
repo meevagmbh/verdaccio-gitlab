@@ -33,8 +33,8 @@ describe('Gitlab Auth Plugin concurrency', () => {
     // written once the walk finishes.
     const logins = [1, 2, 3, 4, 5].map(() => authenticate(plugin, config.user, config.pass));
 
-    return Promise.all(logins).then(results => {
-      results.forEach(groups => {
+    return Promise.all(logins).then((results) => {
+      results.forEach((groups) => {
         expect(groups).toEqual(expect.arrayContaining(['myGroup', 'anotherGroup/myProject', 'myUser']));
       });
 
@@ -60,7 +60,7 @@ describe('Gitlab Auth Plugin concurrency', () => {
         () => {
           throw new Error('authentication with a wrong password should have failed');
         },
-        error => error
+        (error) => error
       ),
     ]).then(([groups, error]) => {
       expect(groups).toContain('myGroup');
@@ -81,16 +81,17 @@ describe('Gitlab Auth Plugin concurrency', () => {
         () => {
           throw new Error('authentication should have failed');
         },
-        () => authenticate(plugin, config.user, config.pass).then(
-          () => {
-            throw new Error('authentication should have failed');
-          },
-          () => {
-            // Two attempts must reach gitlab: a failed walk must not leave a
-            // stale entry that makes later logins fail without asking.
-            expect(calls.usersCurrent).toHaveBeenCalledTimes(2);
-          }
-        )
+        () =>
+          authenticate(plugin, config.user, config.pass).then(
+            () => {
+              throw new Error('authentication should have failed');
+            },
+            () => {
+              // Two attempts must reach gitlab: a failed walk must not leave a
+              // stale entry that makes later logins fail without asking.
+              expect(calls.usersCurrent).toHaveBeenCalledTimes(2);
+            }
+          )
       )
       .finally(() => calls.usersCurrent.mockImplementation(gitlabUser));
   });

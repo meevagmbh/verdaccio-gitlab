@@ -22,7 +22,7 @@ function gitlabError(status, message) {
   return new Error(message, { cause: { response: { status } } });
 }
 
-const usersCurrent = jest.fn(token => {
+const usersCurrent = jest.fn((token) => {
   if (token === OTHER_TOKEN) {
     return Promise.resolve({ username: OTHER_USER });
   }
@@ -41,18 +41,12 @@ function atLeast(params, level) {
   return ((params || {}).minAccessLevel || 0) <= level;
 }
 
-const groupsAll = jest.fn(params =>
-  Promise.resolve([
-    { path: 'myGroup', full_path: 'myGroup' },
-    ...(atLeast(params, 20) ? [{ path: 'readGroup', full_path: 'readGroup' }] : []),
-  ])
+const groupsAll = jest.fn((params) =>
+  Promise.resolve([{ path: 'myGroup', full_path: 'myGroup' }, ...(atLeast(params, 20) ? [{ path: 'readGroup', full_path: 'readGroup' }] : [])])
 );
 
-const projectsAll = jest.fn(params =>
-  Promise.resolve([
-    { path_with_namespace: 'anotherGroup/myProject' },
-    ...(atLeast(params, 20) ? [{ path_with_namespace: 'readGroup/readProject' }] : []),
-  ])
+const projectsAll = jest.fn((params) =>
+  Promise.resolve([{ path_with_namespace: 'anotherGroup/myProject' }, ...(atLeast(params, 20) ? [{ path_with_namespace: 'readGroup/readProject' }] : [])])
 );
 
 // Records the options each resource is created with, keyed by resource name.
