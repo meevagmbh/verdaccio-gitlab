@@ -1,11 +1,12 @@
-version: '3'
-
+# Local demo: a GitLab and a verdaccio with this plugin. Not a production
+# setup. Set GITLAB_ROOT_PASSWORD before the first start, e.g. in a .env file.
 services:
   gitlab:
-    image: 'gitlab/gitlab-ce:nightly'
-    restart: always
+    # A fixed release, so the demo behaves the same on every start.
+    image: 'gitlab/gitlab-ce:19.4.7-ce.0'
+    restart: unless-stopped
     environment:
-      - GITLAB_ROOT_PASSWORD=verdaccio
+      GITLAB_ROOT_PASSWORD: '${GITLAB_ROOT_PASSWORD:?set GITLAB_ROOT_PASSWORD for the GitLab root user}'
     ports:
       - '50080:80'
       - '50022:22'
@@ -15,7 +16,7 @@ services:
       - gitlab-data:/var/opt/gitlab
 
   verdaccio:
-    restart: always
+    restart: unless-stopped
     ports:
       - '4873:4873'
     build:
@@ -23,7 +24,7 @@ services:
       dockerfile: Dockerfile
     volumes:
       - verdaccio-storage:/verdaccio/storage
-    links:
+    depends_on:
       - gitlab
 
 volumes:
