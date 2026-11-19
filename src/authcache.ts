@@ -76,7 +76,9 @@ export class AuthCache {
 }
 
 export type UserDataGroups = {
-  publish: string[];
+  // The real groups the plugin hands verdaccio: publishable paths plainly,
+  // read-only ones marked (see real-groups.ts).
+  realGroups: string[];
 };
 
 export class UserData {
