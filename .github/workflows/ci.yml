@@ -71,7 +71,7 @@ jobs:
       - run: yarn test:functional
 
   docker:
-    name: Docker image build
+    name: Docker image build and smoke test
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -79,6 +79,8 @@ jobs:
         with:
           persist-credentials: false
       - run: docker build -t verdaccio-gitlab:ci .
+      - name: Smoke-test the image
+        run: sh scripts/docker-smoke-test.sh verdaccio-gitlab:ci
 
   commitlint:
     name: Commit messages

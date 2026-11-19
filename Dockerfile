@@ -37,3 +37,8 @@ RUN ln -s /opt/verdaccio-gitlab/build /verdaccio/plugins/verdaccio-gitlab
 
 # Inherited from parent image
 USER $VERDACCIO_USER_UID
+
+# Healthy while verdaccio answers /-/ping on its port. The check does not
+# reach GitLab: a GitLab outage fails logins, not the registry itself.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --start-interval=2s --retries=3 \
+  CMD wget -q -O /dev/null "http://127.0.0.1:$VERDACCIO_PORT/-/ping" || exit 1
