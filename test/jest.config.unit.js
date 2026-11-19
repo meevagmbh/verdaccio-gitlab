@@ -10,7 +10,7 @@ module.exports = {
     '^.+\\.(js|jsx|ts|tsx)$': 'babel-jest',
   },
   testURL: 'http://localhost',
-  collectCoverageFrom: ['src/*.{ts}'],
+  collectCoverageFrom: ['src/*.ts'],
   testRegex: 'test/unit/.*\\.spec\\.ts',
   coveragePathIgnorePatterns: ['node_modules', 'fixtures'],
 };
