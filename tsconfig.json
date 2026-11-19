@@ -1,14 +1,17 @@
 {
   "compilerOptions": {
     "target": "esnext",
-    "module": "commonjs",
-    "declaration": true,
-    "noImplicitAny": false,
+    // CommonJS output for verdaccio's require(); node20 models Node's
+    // require() of ESM-only packages such as @gitbeaker/rest.
+    "module": "node20",
     "strict": true,
-    "outDir": "lib",
-    "allowSyntheticDefaultImports": true,
+    // Some verdaccio packages reference types they do not depend on
+    // (express, http-errors); do not type-check other packages' .d.ts files.
+    "skipLibCheck": true,
     "esModuleInterop": true,
-    "types": ["node"]
+    "types": ["node"],
+    "rootDir": "src",
+    "outDir": "build"
   },
   "include": ["src/*.ts"]
 }
