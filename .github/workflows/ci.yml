@@ -58,9 +58,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      # The default checkout directory is named after the repository
-      # (verdaccio-gitlab); the tests load the plugin through NODE_PATH=..,
-      # so do not set a custom checkout path.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false

@@ -6,8 +6,6 @@ flow-typed/
 .*
 # dot file exceptions
 !.editorconfig
-!.eslintignore
-!.eslintrc*
 !.flowconfig
 !.yarnrc.yml
 

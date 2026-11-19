@@ -12,7 +12,8 @@ export const WRONG_CREDENTIALS = {
 };
 
 export const TARBALL = 'tarball-blahblah-file.name';
-export const PORT_GITLAB_EXPRESS_MOCK = '50080';
+// Only the tarball urls in package fixtures use this port; the registry
+// itself listens on a free port that global-setup.ts picks for each run.
 export const PORT_SERVER_1 = '55551';
 
 export const DOMAIN_SERVERS = localhost;

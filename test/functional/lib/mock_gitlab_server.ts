@@ -43,7 +43,7 @@ export default class GitlabServer {
       });
 
       this.server = this.app.listen(port, () => {
-        console.log(chalk.blue(`gitlab mock listening on port: ${port}`));
+        console.log(chalk.blue(`gitlab mock listening on port: ${this.server.address().port}`));
         resolve(this);
       });
       console.log(chalk.blue(`Running gitlab mock server via express`));

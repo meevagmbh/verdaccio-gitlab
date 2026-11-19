@@ -10,7 +10,7 @@ import { HEADERS, HTTP_STATUS, TOKEN_BASIC, API_MESSAGE } from './constants';
 import { buildToken } from './utils';
 
 const buildAuthHeader = (user, pass): string => {
-  return buildToken(TOKEN_BASIC, new Buffer(`${user}:${pass}`).toString('base64'));
+  return buildToken(TOKEN_BASIC, Buffer.from(`${user}:${pass}`).toString('base64'));
 };
 
 export function getPackage(
