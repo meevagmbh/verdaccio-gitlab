@@ -6834,10 +6834,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"kleur@npm:3.0.3":
-  version: 3.0.3
-  resolution: "kleur@npm:3.0.3"
-  checksum: 10c0/cd3a0b8878e7d6d3799e54340efe3591ca787d9f95f109f28129bdd2915e37807bf8918bb295ab86afb8c82196beec5a1adcaf29042ce3f2bd932b038fe3aa4b
+"kleur@npm:4.1.5":
+  version: 4.1.5
+  resolution: "kleur@npm:4.1.5"
+  checksum: 10c0/e9de6cb49657b6fa70ba2d1448fd3d691a5c4370d8f7bbf1c2f64c24d461270f2117e1b0afe8cb3114f13bbd8e51de158c2a224953960331904e636a5e4c0f2a
   languageName: node
   linkType: hard
 
@@ -10006,7 +10006,7 @@ __metadata:
     husky: "npm:9.1.7"
     jest: "npm:30.5.2"
     jest-environment-node: "npm:30.5.2"
-    kleur: "npm:3.0.3"
+    kleur: "npm:4.1.5"
     license-checker: "npm:^25.0.1"
     lodash: "npm:^4.18.1"
     lru-cache: "npm:11.5.3"
