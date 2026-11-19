@@ -1,6 +1,7 @@
 import * as GitbeakerRest from '@gitbeaker/rest';
 
 import VerdaccioGitlab from '../../src/gitlab';
+import { requesterFn } from '../../src/gitlab-requester';
 
 import config from './partials/config';
 
@@ -34,8 +35,18 @@ describe('Gitlab Auth Plugin client options', () => {
 
     await authenticate(plugin, config.user, config.pass);
 
-    const expected = { host: config.verdaccioGitlabConfig.url, token: config.pass };
+    const expected = { host: config.verdaccioGitlabConfig.url, token: config.pass, requesterFn: expect.any(Function) };
     expect(constructedOptions()).toEqual({ Users: expected, Groups: expected, Projects: expected });
+  });
+
+  test('every resource uses the plugin requester with the short retry window', async () => {
+    const plugin = new VerdaccioGitlab(config.verdaccioGitlabConfig, config.options);
+
+    await authenticate(plugin, config.user, config.pass);
+
+    Object.values(constructedOptions()).forEach(options => {
+      expect(options.requesterFn).toBe(requesterFn);
+    });
   });
 
   test('a trailing slash in the configured url is dropped from the host', async () => {

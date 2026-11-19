@@ -11640,6 +11640,7 @@ __metadata:
     "@commitlint/cli": "npm:21.2.4"
     "@commitlint/config-conventional": "npm:21.2.4"
     "@eslint/js": "npm:10.0.1"
+    "@gitbeaker/requester-utils": "npm:44.0.5"
     "@gitbeaker/rest": "npm:44.0.5"
     "@types/jest": "npm:30.0.0"
     "@types/lodash": "npm:^4.14.149"

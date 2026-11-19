@@ -5,6 +5,8 @@ import { errorUtils, pluginUtils } from '@verdaccio/core';
 import { Callback, Logger, RemoteUser, PackageAccess } from '@verdaccio/types';
 import { Groups, Projects, Users } from '@gitbeaker/rest';
 
+import { requesterFn } from './gitlab-requester';
+
 import { UserDataGroups } from './authcache';
 import { AuthCache, UserData } from './authcache';
 
@@ -136,7 +138,7 @@ export default class VerdaccioGitLab
   private _queryUserGroups(user: string, password: string): Promise<string[]> {
     // Only the three resources the walk needs: the client's all-in-one Gitlab
     // class builds every resource it knows on each login.
-    const clientOptions = { host: this.gitlabHost, token: password };
+    const clientOptions = { host: this.gitlabHost, token: password, requesterFn };
     const users = new Users(clientOptions);
     const groups = new Groups(clientOptions);
     const projects = new Projects(clientOptions);
