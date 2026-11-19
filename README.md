@@ -214,7 +214,8 @@ Please adhere to the [verdaccio community guidelines](https://github.com/verdacc
 and run all the tests before creating a PR. The commit message shall follow the
 conventional changelog as it is enforced via local commit hook using husky and
 the [@commitlint/config-conventional](https://github.com/conventional-changelog/commitlint)
-rule set.
+rule set. `yarn install` sets up the hook (`.husky/commit-msg`) by pointing
+git's `core.hooksPath` at `.husky/_`.
 
 > PR's that do not pass CI will not be reviewed.
 

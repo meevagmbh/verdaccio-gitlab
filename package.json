@@ -10,7 +10,9 @@
     "type-check:watch": "npm run type-check -- --watch",
     "lint:ts": "eslint .",
     "lint": "yarn type-check && yarn lint:ts && markdownlint README.md",
-    "prepack": "rimraf build && yarn lint && yarn code:build",
+    "postinstall": "husky || true",
+    "prepack": "rimraf build && yarn lint && yarn code:build && pinst --disable",
+    "postpack": "pinst --enable",
     "release:major": "scripts/release.sh major",
     "release:minor": "scripts/release.sh minor",
     "release:patch": "scripts/release.sh patch",
@@ -64,8 +66,8 @@
     "@babel/preset-env": "7.29.14",
     "@babel/preset-typescript": "7.29.7",
     "@babel/register": "7.29.13",
-    "@commitlint/cli": "^8.3.3",
-    "@commitlint/config-conventional": "^8.3.3",
+    "@commitlint/cli": "21.2.4",
+    "@commitlint/config-conventional": "21.2.4",
     "@eslint/js": "10.0.1",
     "@types/jest": "30.0.0",
     "@types/lodash": "^4.14.149",
@@ -78,13 +80,14 @@
     "generate-changelog": "^1.8.0",
     "globals": "17.14.0",
     "http-status": "^1.4.2",
-    "husky": "^3.1.0",
+    "husky": "9.1.7",
     "jest": "30.5.2",
     "jest-environment-node": "30.5.2",
     "kleur": "3.0.3",
     "license-checker": "^25.0.1",
     "lodash": "^4.17.15",
     "markdownlint-cli": "^0.20.0",
+    "pinst": "3.0.0",
     "prettier": "^1.19.1",
     "request": "^2.88.0",
     "rimraf": "^3.0.0",
@@ -96,11 +99,6 @@
     "extends": [
       "@commitlint/config-conventional"
     ]
-  },
-  "husky": {
-    "hooks": {
-      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
-    }
   },
   "babel": {
     "presets": [
