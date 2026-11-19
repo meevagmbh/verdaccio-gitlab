@@ -10,6 +10,7 @@ flow-typed/
 !.eslintignore
 !.eslintrc*
 !.flowconfig
+!.yarnrc.yml
 
 Dockerfile*
 docker-compose*.yml

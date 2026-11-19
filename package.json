@@ -8,7 +8,7 @@
     "type-check": "tsc --noEmit",
     "license": "license-checker --onlyAllow 'Apache-2.0; Apache License, Version 2.0; BSD; BSD-2-Clause; BSD-3-Clause; ISC; MIT; Unlicense; WTFPL; CC-BY-3.0; CC0-1.0' --production --summary",
     "type-check:watch": "npm run type-check -- --watch",
-    "lint:ts": "eslint . --ext .js,.ts",
+    "lint:ts": "eslint . --ext .js,.ts --resolve-plugins-relative-to node_modules/@verdaccio/eslint-config",
     "lint": "yarn type-check && yarn lint:ts && markdownlint README.md",
     "prepublish": "in-publish && yarn lint && yarn code:build || not-in-publish",
     "release:major": "changelog -M && git commit -a -m 'docs: updated CHANGELOG.md' && yarn version --major && git push origin && git push origin --tags",
@@ -56,6 +56,8 @@
     "node-cache": "4.2.0"
   },
   "devDependencies": {
+    "@babel/cli": "^7.7.4",
+    "@babel/node": "^7.7.4",
     "@commitlint/cli": "^8.3.3",
     "@commitlint/config-conventional": "^8.3.3",
     "@commitlint/travis-cli": "^8.3.3",
@@ -118,5 +120,6 @@
         "@verdaccio"
       ]
     ]
-  }
+  },
+  "packageManager": "yarn@4.18.1"
 }
