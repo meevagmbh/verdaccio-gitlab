@@ -1,16 +1,15 @@
 #!/bin/sh
-# Cut a release: update CHANGELOG.md, bump the version, commit, tag vX.Y.Z
-# and push the branch together with the tag.
+# Cut a release: bump the version, prepend the release notes to CHANGELOG.md,
+# commit both, tag vX.Y.Z and push the branch together with the tag.
 #
 # Usage: scripts/release.sh major|minor|patch
-# Run it through yarn (yarn release:<bump>) so the changelog binary is on PATH.
+# Run it through yarn (yarn release:<bump>) so the conventional-changelog
+# binary is on PATH.
 set -eu
 
 bump="${1:-}"
 case "$bump" in
-  major) changelog_flag=-M ;;
-  minor) changelog_flag=-m ;;
-  patch) changelog_flag=-p ;;
+  major | minor | patch) ;;
   *)
     echo "usage: $0 major|minor|patch" >&2
     exit 1
@@ -22,19 +21,30 @@ if [ -n "$(git status --porcelain)" ]; then
   exit 1
 fi
 
-# generate-changelog derives the next version from package.json and the
-# commits since the latest tag, so it has to run before the version bump.
-changelog "$changelog_flag"
-git add CHANGELOG.md
-git commit -m 'docs: updated CHANGELOG.md'
+# Undo the version bump and the changelog update if a step before the commit
+# fails, so a failed release leaves the working tree clean again.
+committed=false
+restore() {
+  if [ "$committed" = false ]; then
+    git checkout -- package.json CHANGELOG.md
+  fi
+}
+trap restore EXIT
 
-# yarn 4's `yarn version` only rewrites package.json (and the workspace entry
-# in yarn.lock); it neither commits nor tags.
+# yarn 4's `yarn version` only rewrites package.json; it neither commits nor
+# tags.
 yarn version "$bump"
 version="$(node -p "require('./package.json').version")"
 tag="v$version"
 
-git commit -a -m "$tag"
+# conventional-changelog titles the new section with the version from
+# package.json and collects the commits since the latest vX.Y.Z tag, so it has
+# to run after the bump and before the tag. Older entries stay below it.
+conventional-changelog --preset conventionalcommits --infile CHANGELOG.md --release-count 1
+
+git add package.json CHANGELOG.md
+git commit -m "chore(release): $tag"
+committed=true
 git tag -a "$tag" -m "$tag"
 
 git push --atomic origin HEAD "refs/tags/$tag"
