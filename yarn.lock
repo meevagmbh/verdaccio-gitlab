@@ -5774,13 +5774,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"http-status@npm:^1.4.2":
-  version: 1.4.2
-  resolution: "http-status@npm:1.4.2"
-  checksum: 10c0/0b61e87431d6d1dfcd0b78c64b397a5d8ed2c7469988183f2e78f50116a6602ba8982f1e570be7fd57f58f1e6108501221ddb0284c9423d07b09f1dd6ba46a8c
-  languageName: node
-  linkType: hard
-
 "http2-wrapper@npm:^2.2.1":
   version: 2.2.4
   resolution: "http2-wrapper@npm:2.2.4"
@@ -10002,7 +9995,6 @@ __metadata:
     eslint: "npm:10.14.0"
     express: "npm:^4.22.3"
     globals: "npm:17.14.0"
-    http-status: "npm:^1.4.2"
     husky: "npm:9.1.7"
     jest: "npm:30.5.2"
     jest-environment-node: "npm:30.5.2"
