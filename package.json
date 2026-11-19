@@ -32,7 +32,7 @@
     "bin/",
     "build/*.js"
   ],
-  "version": "3.0.1",
+  "version": "4.0.0",
   "description": "private npm registry (Verdaccio) using gitlab-ce as authentication and authorization provider",
   "keywords": [
     "sinopia",
