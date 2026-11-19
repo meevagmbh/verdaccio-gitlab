@@ -167,40 +167,6 @@ export default class Server implements IServerBridge {
     }).send(JSON.stringify(version));
   }
 
-  public putTarballIncomplete(pkgName: string, filename: string, data: any, headerContentSize: number): Promise<any> {
-    const promise = this.request({
-      uri: `/${encodeURIComponent(pkgName)}/-/${encodeURIComponent(filename)}/whatever`,
-      method: 'PUT',
-      headers: {
-        [HEADERS.CONTENT_TYPE]: HEADERS.OCTET_STREAM,
-        [HEADERS.CONTENT_LENGTH]: headerContentSize,
-      },
-      timeout: 1000,
-    });
-
-    promise.request(function(req) {
-      req.write(data);
-      // it auto abort the request
-      setTimeout(function() {
-        req.req.abort();
-      }, 20);
-    });
-
-    return new Promise(function(resolve, reject) {
-      promise
-        .then(function() {
-          reject(Error('no error'));
-        })
-        .catch(function(err) {
-          if (err.code === 'ECONNRESET') {
-            resolve();
-          } else {
-            reject(err);
-          }
-        });
-    });
-  }
-
   public addPackage(name: string) {
     return this.putPackage(name, getPackage(name))
       .status(HTTP_STATUS.CREATED)
