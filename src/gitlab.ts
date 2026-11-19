@@ -23,6 +23,8 @@ export type VerdaccioGitlabConfig = {
     enabled?: boolean;
     ttl?: number;
   };
+  // Minimum GitLab role on the matching group or project to read a package.
+  access?: VerdaccioGitlabAccessLevel;
   publish?: VerdaccioGitlabAccessLevel;
 };
 
@@ -39,8 +41,13 @@ const ACCESS_LEVEL_MAPPING = {
   $owner: 50,
 };
 
-// List of verdaccio builtin levels that map to anonymous access
+// Package access levels that make a section public: anyone may read it.
 const BUILTIN_ACCESS_LEVEL_ANONYMOUS = ['$anonymous', '$all'];
+
+// Marks groups and projects the user may read from but not publish to. A
+// GitLab path cannot contain a colon, so a marked entry never collides with
+// a real path, and verdaccio stores it like any other group.
+export const READ_ONLY_PREFIX = 'gitlab-read:';
 
 // Level to apply on 'allow_access' calls when a package definition does not define one
 const DEFAULT_ALLOW_ACCESS_LEVEL = ['$all'];
@@ -68,6 +75,24 @@ function gitlabStatus(error: any): number | undefined {
   return error?.cause?.response?.status;
 }
 
+// The group or project paths that grant rights on a package: the name itself,
+// and for a scoped name each leading part of it. `@group/pkg` maps to `group`
+// and `group/pkg`; `pkg` maps to `pkg`, which may also be the user name.
+function packageCandidates(packageName: string): string[] {
+  const candidates = [packageName];
+  if (packageName.startsWith('@')) {
+    const parts = packageName.slice(1).split('/');
+    for (let i = 1; i <= parts.length; i += 1) {
+      candidates.push(parts.slice(0, i).join('/'));
+    }
+  }
+  return candidates;
+}
+
+function missingPermission(packageName: string): string {
+  return packageName.startsWith('@') ? 'package-scope' : 'package-name';
+}
+
 export default class VerdaccioGitLab
   extends pluginUtils.Plugin<VerdaccioGitlabConfig>
   implements pluginUtils.Auth<VerdaccioGitlabConfig>
@@ -77,6 +102,7 @@ export default class VerdaccioGitLab
   private authCache?: AuthCache;
   private logger: Logger;
   private publishLevel: VerdaccioGitlabAccessLevel;
+  private accessLevel: VerdaccioGitlabAccessLevel;
   // The client joins host and "api/v4" with a slash, so a trailing slash in
   // the configured url would turn into "//api/v4". Left undefined without a
   // url, so the client falls back to its default, https://gitlab.com.
@@ -112,6 +138,12 @@ export default class VerdaccioGitLab
       throw Error(`[gitlab] invalid publish access level configuration: ${this.publishLevel}`);
     }
     this.logger.info(`[gitlab] publish control level: ${this.publishLevel}`);
+
+    this.accessLevel = this.config.access || '$reporter';
+    if (!Object.keys(ACCESS_LEVEL_MAPPING).includes(this.accessLevel)) {
+      throw Error(`[gitlab] invalid access level configuration: ${this.accessLevel}`);
+    }
+    this.logger.info(`[gitlab] access control level: ${this.accessLevel}`);
   }
 
   // Every user's GitLab token goes to this url, so it has to use TLS unless
@@ -223,25 +255,37 @@ export default class VerdaccioGitLab
         }
 
         const publishLevelId = ACCESS_LEVEL_MAPPING[this.publishLevel];
+        const accessLevelId = ACCESS_LEVEL_MAPPING[this.accessLevel];
 
-        // Set the groups of an authenticated user, in normal mode:
-        // - for access, depending on the package settings in verdaccio
-        // - for publish, the logged in user id and all the groups they can reach as configured with access level `$auth.gitlab.publish`
-        const gitlabPublishQueryParams = { minAccessLevel: publishLevelId, perPage: GITLAB_PAGE_SIZE };
+        // The groups and projects the user reaches with a role, as package
+        // name candidates. Top-level groups only, filtered by GitLab itself,
+        // and projects in GitLab's lean "simple" form: the walk only needs
+        // paths, and pages of full project objects are slow to build and big.
+        const reachable = (minAccessLevel: number): Promise<string[]> => {
+          const params = { minAccessLevel, perPage: GITLAB_PAGE_SIZE };
+          this.logger.trace({ params: JSON.stringify(params) }, '[gitlab] querying gitlab groups and projects with params: @{params}');
+          return Promise.all([
+            groups
+              .all<false, 'offset'>({ ...params, topLevelOnly: true })
+              .then(groupList => groupList.filter(group => group.path === group.full_path).map(group => group.path)),
+            projects
+              .all<false, 'offset'>({ ...params, simple: true })
+              .then(projectList => projectList.map(project => project.path_with_namespace)),
+          ]).then(([groupPaths, projectPaths]) => [...groupPaths, ...projectPaths]);
+        };
 
-        this.logger.trace({ params: JSON.stringify(gitlabPublishQueryParams) }, '[gitlab] querying gitlab user groups with params: @{params}');
+        // Both roles are queried in parallel, so a login takes no longer than
+        // before; with the same role for both, one query serves both.
+        const publishPromise = reachable(publishLevelId);
+        const accessPromise = accessLevelId === publishLevelId ? publishPromise : reachable(accessLevelId);
 
-        const groupsPromise = groups.all<false, 'offset'>(gitlabPublishQueryParams).then(groupList => {
-          return groupList.filter(group => group.path === group.full_path).map(group => group.path);
-        });
-
-        const projectsPromise = projects.all<false, 'offset'>(gitlabPublishQueryParams).then(projectList => {
-          return projectList.map(project => project.path_with_namespace);
-        });
-
-        return Promise.all([groupsPromise, projectsPromise]).then(
-          ([groups, projectGroups]) => {
-            const realGroups = [user, ...groups, ...projectGroups];
+        return Promise.all([publishPromise, accessPromise]).then(
+          ([publishPaths, accessPaths]) => {
+            // Publish paths plainly, paths the user may only read marked.
+            // Each path appears once, which keeps verdaccio's tokens small.
+            const publishable = new Set([user, ...publishPaths]);
+            const readOnly = [...new Set(accessPaths)].filter(path => !publishable.has(path));
+            const realGroups = [...publishable, ...readOnly.map(path => READ_ONLY_PREFIX + path)];
             this._setCachedUserGroups(user, password, { publish: realGroups });
             this.loginLimiter.recordSuccess(user);
 
@@ -294,88 +338,55 @@ export default class VerdaccioGitLab
     if (!_package.gitlab) return cb(null, false);
 
     const packageAccess = _package.access && _package.access.length > 0 ? _package.access : DEFAULT_ALLOW_ACCESS_LEVEL;
+    const packageName = _package.name as string;
 
-    if (user.name !== undefined) {
-      // successfully authenticated
+    if (BUILTIN_ACCESS_LEVEL_ANONYMOUS.some(level => packageAccess.includes(level))) {
+      this.logger.debug({ pkg: logSafe(packageName) }, '[gitlab] allow public access to package: @{pkg}');
+      return cb(null, true);
+    }
+
+    if (user.name === undefined) {
+      this.logger.info({ pkg: logSafe(packageName) }, '[gitlab] deny anonymous access to package: @{pkg}');
+      return cb(errorUtils.getUnauthorized('access denied, user not authenticated and anonymous access disabled'));
+    }
+
+    const readable = new Set(user.real_groups.map(group => (group.startsWith(READ_ONLY_PREFIX) ? group.slice(READ_ONLY_PREFIX.length) : group)));
+    if (packageCandidates(packageName).some(candidate => readable.has(candidate))) {
       this.logger.debug(
-        { user: logSafe(user.name), pkg: logSafe(_package.name) },
-        '[gitlab] allow user: @{user} authenticated access to package: @{pkg}'
+        { user: logSafe(user.name), pkg: logSafe(packageName) },
+        '[gitlab] allow user: @{user} access to package: @{pkg}'
       );
       return cb(null, true);
-    } else {
-      // unauthenticated
-      if (BUILTIN_ACCESS_LEVEL_ANONYMOUS.some(level => packageAccess.includes(level))) {
-        this.logger.debug({ pkg: logSafe(_package.name) }, '[gitlab] allow anonymous access to package: @{pkg}');
-        return cb(null, true);
-      } else {
-        this.logger.info({ pkg: logSafe(_package.name) }, '[gitlab] deny anonymous access to package: @{pkg}');
-        return cb(errorUtils.getUnauthorized('access denied, user not authenticated and anonymous access disabled'));
-      }
     }
+
+    this.logger.warn(
+      { user: logSafe(user.name), pkg: logSafe(packageName) },
+      '[gitlab] user: @{user} denied access to package: @{pkg}'
+    );
+    return cb(errorUtils.getForbidden(`must have required permissions: ${this.accessLevel} at ${missingPermission(packageName)}`));
   }
 
   public allow_publish(user: RemoteUser, _package: VerdaccioGitlabPackageAccess & PackageAccess, cb: Callback) {
     if (!_package.gitlab) return cb(null, false);
 
-    const packageScopePermit = false;
-    let packagePermit = false;
-    // Only allow to publish packages when:
-    //  - the package has exactly the same name as one of the user groups, or
-    //  - the package scope is the same as one of the user groups
-    for (const real_group of user.real_groups) {
-      // jscs:ignore requireCamelCaseOrUpperCaseIdentifiers
-      this.logger.trace(
-        { group: logSafe(real_group), user: logSafe(user.name || ''), pkg: logSafe(_package.name) },
-        '[gitlab] publish: checking group: @{group} for user: @{user} and package: @{pkg}'
-      );
+    const packageName = _package.name as string;
+    // Only plain entries carry the publish role; marked ones are read-only.
+    const publishable = user.real_groups.filter(group => !group.startsWith(READ_ONLY_PREFIX));
+    const match = packageCandidates(packageName).find(candidate => publishable.includes(candidate));
 
-      if (this._matchGroupWithPackage(real_group, _package.name as string)) {
-        packagePermit = true;
-        break;
-      }
-    }
-
-    if (packagePermit || packageScopePermit) {
-      const perm = packagePermit ? 'package-name' : 'package-scope';
+    if (match !== undefined) {
       this.logger.debug(
-        { user: logSafe(user.name || ''), pkg: logSafe(_package.name), perm },
-        '[gitlab] user: @{user} allowed to publish package: @{pkg} based on @{perm}'
+        { user: logSafe(user.name || ''), pkg: logSafe(packageName), group: logSafe(match) },
+        '[gitlab] user: @{user} allowed to publish package: @{pkg} based on group: @{group}'
       );
       return cb(null, true);
-    } else {
-      this.logger.warn(
-        { user: logSafe(user.name || ''), pkg: logSafe(_package.name) },
-        '[gitlab] user: @{user} denied from publishing package: @{pkg}'
-      );
-      // @ts-ignore
-      const missingPerm = _package.name.indexOf('@') === 0 ? 'package-scope' : 'package-name';
-      return cb(errorUtils.getForbidden(`must have required permissions: ${this.publishLevel || ''} at ${missingPerm}`));
-    }
-  }
-
-  private _matchGroupWithPackage(real_group: string, package_name: string): boolean {
-    if (real_group === package_name) {
-      return true;
     }
 
-    if (package_name.indexOf('@') === 0) {
-      const split_real_group = real_group.split('/');
-      const split_package_name = package_name.slice(1).split('/');
-
-      if (split_real_group.length > split_package_name.length) {
-        return false;
-      }
-
-      for (let i = 0; i < split_real_group.length; i += 1) {
-        if (split_real_group[i] !== split_package_name[i]) {
-          return false;
-        }
-      }
-
-      return true;
-    }
-
-    return false;
+    this.logger.warn(
+      { user: logSafe(user.name || ''), pkg: logSafe(packageName) },
+      '[gitlab] user: @{user} denied from publishing package: @{pkg}'
+    );
+    return cb(errorUtils.getForbidden(`must have required permissions: ${this.publishLevel || ''} at ${missingPermission(packageName)}`));
   }
 
   private _getCachedUserGroups(username: string, password: string): UserDataGroups | null {

@@ -33,20 +33,25 @@ const usersCurrent = jest.fn(token => {
   return Promise.resolve({ username: VALID_USER });
 });
 
-const groupsAll = jest.fn(() =>
+// The user is maintainer (40) of myGroup and anotherGroup/myProject, and
+// reporter (20) of readGroup and readGroup/readProject.
+const MAINTAINER = 40;
+
+function atLeast(params, level) {
+  return ((params || {}).minAccessLevel || 0) <= level;
+}
+
+const groupsAll = jest.fn(params =>
   Promise.resolve([
-    {
-      path: 'myGroup',
-      full_path: 'myGroup',
-    },
+    { path: 'myGroup', full_path: 'myGroup' },
+    ...(atLeast(params, 20) ? [{ path: 'readGroup', full_path: 'readGroup' }] : []),
   ])
 );
 
-const projectsAll = jest.fn(() =>
+const projectsAll = jest.fn(params =>
   Promise.resolve([
-    {
-      path_with_namespace: 'anotherGroup/myProject',
-    },
+    { path_with_namespace: 'anotherGroup/myProject' },
+    ...(atLeast(params, 20) ? [{ path_with_namespace: 'readGroup/readProject' }] : []),
   ])
 );
 
@@ -88,6 +93,6 @@ class Projects {
   }
 }
 
-const __calls = { usersCurrent, groupsAll, projectsAll, constructed, gitlabError, OTHER_TOKEN };
+const __calls = { usersCurrent, groupsAll, projectsAll, constructed, gitlabError, OTHER_TOKEN, MAINTAINER };
 
 module.exports = { Users, Groups, Projects, __calls };

@@ -35,11 +35,13 @@ describe('Gitlab Auth Plugin concurrency', () => {
 
     return Promise.all(logins).then(results => {
       results.forEach(groups => {
-        expect(groups.sort()).toEqual(['myGroup', 'anotherGroup/myProject', 'myUser'].sort());
+        expect(groups).toEqual(expect.arrayContaining(['myGroup', 'anotherGroup/myProject', 'myUser']));
       });
 
-      expect(calls.groupsAll).toHaveBeenCalledTimes(1);
-      expect(calls.projectsAll).toHaveBeenCalledTimes(1);
+      // One walk: the user, then groups and projects for the read and the
+      // publish role.
+      expect(calls.groupsAll).toHaveBeenCalledTimes(2);
+      expect(calls.projectsAll).toHaveBeenCalledTimes(2);
       expect(calls.usersCurrent).toHaveBeenCalledTimes(1);
     });
   });
@@ -100,8 +102,8 @@ describe('Gitlab Auth Plugin concurrency', () => {
       // The client decamelizes these into min_access_level=40&per_page=100.
       const expected = { minAccessLevel: 40, perPage: 100 };
 
-      expect(calls.groupsAll).toHaveBeenCalledWith(expected);
-      expect(calls.projectsAll).toHaveBeenCalledWith(expected);
+      expect(calls.groupsAll).toHaveBeenCalledWith(expect.objectContaining(expected));
+      expect(calls.projectsAll).toHaveBeenCalledWith(expect.objectContaining(expected));
     });
   });
 });

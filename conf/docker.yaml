@@ -13,6 +13,7 @@ auth:
     authCache:
       enabled: true
       ttl: 300
+    access: $reporter
     publish: $maintainer
 
 uplinks:
@@ -20,8 +21,17 @@ uplinks:
     url: https://registry.npmjs.org/
 
 packages:
+  # Private packages: only members of the matching GitLab group or project,
+  # with at least the auth.gitlab.access role, can read them. Use one entry
+  # per GitLab group that publishes packages.
+  '@my-group/*':
+    access: $authenticated
+    publish: $authenticated
+    gitlab: true
+
+  # Public packages from npmjs: $all keeps them readable for everyone.
+  # Publishing is still checked against GitLab.
   '@*/*':
-    # scoped packages
     access: $all
     publish: $authenticated
     proxy: npmjs

@@ -21,12 +21,24 @@ uplinks:
 log: { type: stdout, format: pretty, level: trace }
 
 packages:
+  # A public upstream package: $all keeps it readable without membership.
   'verdaccio':
-    access: $authenticated
+    access: $all
     publish: $authenticated
     storage: false
     gitlab: true
     proxy: npmjs
+
+  # Private packages: readable by members of the matching group or project.
+  '@test-group/*':
+    access: $authenticated
+    publish: $authenticated
+    gitlab: true
+
+  '@foreign-group/*':
+    access: $authenticated
+    publish: $authenticated
+    gitlab: true
 
   '@*/*':
     access: $all

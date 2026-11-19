@@ -1,7 +1,7 @@
 import { Callback, RemoteUser } from '@verdaccio/types';
 import '@gitbeaker/rest';
 
-import { VerdaccioGitlabPackageAccess } from '../../src/gitlab';
+import { READ_ONLY_PREFIX, VerdaccioGitlabPackageAccess } from '../../src/gitlab';
 import VerdaccioGitlab from '../../src/gitlab';
 
 import config from './partials/config';
@@ -20,7 +20,9 @@ describe('Gitlab Auth Plugin Unit Tests', () => {
 
     const cb: Callback = (err, data) => {
       expect(err).toBeFalsy();
-      expect(data.sort()).toEqual(['myGroup', 'anotherGroup/myProject', 'myUser'].sort());
+      expect(data.sort()).toEqual(
+        ['myGroup', 'anotherGroup/myProject', 'myUser', `${READ_ONLY_PREFIX}readGroup`, `${READ_ONLY_PREFIX}readGroup/readProject`].sort()
+      );
       done();
     };
 

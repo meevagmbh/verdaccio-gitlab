@@ -56,8 +56,14 @@ uplinks:
     url: https://registry.npmjs.org/
 
 packages:
+  # private packages: readable by members of the matching GitLab group
+  '@my-group/*':
+    access: $authenticated
+    publish: $authenticated
+    gitlab: true
+
+  # public scoped packages from npmjs
   '@*/*':
-    # scoped packages
     access: $all
     publish: $maintainer
     proxy: npmjs
@@ -101,15 +107,26 @@ element from the config.
 
 ### Access
 
-*access* is allowed depending on the following verdaccio `package` configuration
-directives:
+*access* is allowed if:
 
-- authenticated users are able to access all packages
-- unauthenticated users will be able to access packages marked with either
-  `$all` or `$anonymous` access levels at the package group definition
+1. the package section's `access` contains `$all` or `$anonymous` (or is
+   empty): the section is public, and anyone may read it, or
+2. the user is authenticated and the package name maps to the user's name,
+   or to one of the user's GitLab groups or projects, in the same way as for
+   *publish* below.
 
-> *Please note* that no group or package name mapping is applied on access, any
-user successfully authenticated can access all packages.
+For 2., the GitLab user must have at least the role set in
+`auth.gitlab.access` (default `$reporter`) on the group or project. Other
+authenticated users get `403 Forbidden`, anonymous users `401 Unauthorized`.
+
+So keep public upstream packages in sections with `access: $all`, and put
+private packages in sections with `access: $authenticated`, as in the
+configuration sample above.
+
+The plugin hands verdaccio the user's groups and projects as the user's
+groups: those with the publish role by their path, those the user may only
+read as `gitlab-read:<path>`. They end up in verdaccio's tokens, so a user
+with very many groups and projects gets large tokens.
 
 ### Publish
 
@@ -129,7 +146,8 @@ For instance, assuming the following configuration:
 ```yaml
 auth:
   gitlab:
-    publish = $maintainer
+    access: $reporter
+    publish: $maintainer
 ```
 
 The GitLab user `sample_user` has access to:
@@ -140,14 +158,18 @@ The GitLab user `sample_user` has access to:
 
 Then this user would be able to:
 
-- *access* any package
+- *access* any package in a public section, and in sections with
+  `access: $authenticated` the packages `sample_user`, `group1`, `group2`,
+  any package under `@group1/**` or `@group2/**`, and `@group3/project`
 - *publish* any of the following packages:
   - `sample_user`
   - `group1`
   - any package under `@group1/**`
   - `@group3/project`
 
-There would be an error if the user tried to publish any package under `@group2/**`.
+There would be an error if the user tried to publish any package under
+`@group2/**`, or to read a package under `@group4/**` in a section with
+`access: $authenticated`.
 
 ## Configuration Options
 
@@ -158,6 +180,7 @@ auth:
   gitlab:
     url: <url>
     allowInsecureHttp: <boolean>
+    access: <string>
     authCache:
       enabled: <boolean>
       ttl: <integer>
@@ -171,6 +194,7 @@ auth:
 | `allowInsecureHttp` | `false` | boolean | accept an `http` url; users' GitLab tokens then cross the network unencrypted, so only use it for a GitLab on the same host or a trusted network |
 | `authCache: enabled` | `true` | boolean | activate in-memory authentication cache |
 | `authCache: ttl` | `300` | integer | time-to-live of entries in the authentication cache, in seconds; must be positive |
+| `access` | `$reporter` | [`$guest`, `$reporter`, `$developer`, `$maintainer`, `$owner`] | minimum GitLab role on the matching group or project to read packages in sections with `gitlab: true` that are not public |
 | `publish` | `$maintainer` | [`$guest`, `$reporter`, `$developer`, `$maintainer`, `$owner`] | group minimum access level of the logged in user required for npm publish operations |
 <!-- markdownlint-enable MD013 -->
 
