@@ -20,7 +20,7 @@ env:
 # would run before corepack has put yarn 4 on the PATH.
 jobs:
   lint:
-    name: Lint, type-check, licenses
+    name: Lint, type-check, format, licenses
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -35,6 +35,7 @@ jobs:
       - run: yarn install --immutable
       - run: yarn license
       - run: yarn lint
+      - run: yarn format:check
 
   unit:
     name: Unit tests
