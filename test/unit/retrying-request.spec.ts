@@ -10,7 +10,7 @@ function respond(status: number, body: unknown = {}, headers: Record<string, str
 
 function fakeFetch(...responses: Response[]) {
   const requests: Request[] = [];
-  const fetchFn = jest.fn((request: Request) => {
+  const fetchFn = vi.fn((request: Request) => {
     requests.push(request);
     const next = responses.length > 1 ? responses.shift()! : responses[0];
     return Promise.resolve(next.clone());

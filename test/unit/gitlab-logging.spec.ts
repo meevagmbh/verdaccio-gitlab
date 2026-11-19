@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest';
 import { RemoteUser } from '@verdaccio/types';
 
 import VerdaccioGitlab, { VerdaccioGitlabPackageAccess } from '../../src/gitlab';
@@ -15,7 +16,7 @@ const FORGED = 'evil\n info --- [gitlab] user: root successfully authenticated @
 const LEVELS = ['error', 'warn', 'info', 'debug', 'trace'] as const;
 
 function loggedCalls(): any[][] {
-  return LEVELS.flatMap((level) => (logger[level] as jest.Mock).mock.calls);
+  return LEVELS.flatMap((level) => (logger[level] as Mock).mock.calls);
 }
 
 function templates(): string[] {
@@ -51,7 +52,7 @@ describe('Gitlab Auth Plugin logging of request data', () => {
 
   beforeEach(() => {
     plugin = new VerdaccioGitlab(config.verdaccioGitlabConfig, config.options);
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   const pkg: VerdaccioGitlabPackageAccess = { name: FORGED, access: ['$authenticated'], gitlab: true };

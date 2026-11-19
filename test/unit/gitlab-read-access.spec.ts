@@ -33,7 +33,7 @@ describe('Gitlab Auth Plugin read access', () => {
 
   beforeEach(() => {
     plugin = new VerdaccioGitlab(config.verdaccioGitlabConfig, config.options);
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('groups from a login', () => {

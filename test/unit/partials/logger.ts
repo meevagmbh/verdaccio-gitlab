@@ -1,13 +1,13 @@
 import { Logger } from '@verdaccio/types';
 
 const logger: Logger = {
-  error: jest.fn(),
-  info: jest.fn(),
-  debug: jest.fn(),
-  child: jest.fn(),
-  warn: jest.fn(),
-  http: jest.fn(),
-  trace: jest.fn(),
+  error: vi.fn(),
+  info: vi.fn(),
+  debug: vi.fn(),
+  child: vi.fn(),
+  warn: vi.fn(),
+  http: vi.fn(),
+  trace: vi.fn(),
 };
 
 export default logger;
