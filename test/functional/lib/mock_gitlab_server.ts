@@ -16,7 +16,7 @@ export default class GitlabServer {
   }
 
   public start(port: number): Promise<any> {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       this.app.use(bodyParser.json());
       this.app.use(
         bodyParser.urlencoded({
@@ -42,7 +42,13 @@ export default class GitlabServer {
         });
       });
 
-      this.server = this.app.listen(port, () => {
+      // Express 5 passes listen errors (such as EADDRINUSE) to this callback
+      // instead of throwing them.
+      this.server = this.app.listen(port, (error) => {
+        if (error) {
+          reject(error);
+          return;
+        }
         console.log(chalk.blue(`gitlab mock listening on port: ${this.server.address().port}`));
         resolve(this);
       });
