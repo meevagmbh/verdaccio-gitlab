@@ -20,7 +20,7 @@ RUN corepack enable && \
 
 # Keep in step with the verdaccio devDependency in package.json.
 FROM verdaccio/verdaccio:6.11.1
-LABEL maintainer="https://github.com/bufferoverflow/verdaccio-gitlab"
+LABEL maintainer="https://github.com/meevagmbh/verdaccio-gitlab"
 
 # Go back to root to be able to install the plugin
 USER root

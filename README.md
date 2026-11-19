@@ -4,8 +4,12 @@ Use [GitLab Community Edition](https://gitlab.com/gitlab-org/gitlab-ce)
 as authentication provider for the private npm registry
 [Verdaccio](https://github.com/verdaccio/verdaccio), the sinopia fork.
 
-[![npm](https://badge.fury.io/js/verdaccio-gitlab.svg)](http://badge.fury.io/js/verdaccio-gitlab)
 [![CI](https://github.com/meevagmbh/verdaccio-gitlab/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/meevagmbh/verdaccio-gitlab/actions/workflows/ci.yml)
+
+This is the meeva fork of
+[bufferoverflow/verdaccio-gitlab](https://github.com/bufferoverflow/verdaccio-gitlab),
+whose master branch has not changed since September 2021. Clone, report
+issues and open pull requests here.
 
 The main goal and differences from other sinopia/verdaccio plugins are
 the following:
@@ -22,7 +26,7 @@ You need node version 24.x (LTS, codename **Krypton**), the version the
 official verdaccio 6 image runs on.
 
 ```sh
-git clone https://github.com/bufferoverflow/verdaccio-gitlab.git
+git clone https://github.com/meevagmbh/verdaccio-gitlab.git
 cd verdaccio-gitlab
 corepack enable # installs the yarn version pinned in package.json
 yarn install
@@ -252,7 +256,7 @@ does not.
 ## Docker
 
 ```sh
-git clone https://github.com/bufferoverflow/verdaccio-gitlab.git
+git clone https://github.com/meevagmbh/verdaccio-gitlab.git
 cd verdaccio-gitlab
 docker-compose up --build -d
 ```
