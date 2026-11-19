@@ -1,0 +1,72 @@
+version: 2
+
+# Every ecosystem waits 7 days after a release, like npmMinimalAgeGate in
+# .yarnrc.yml: compromised releases are usually yanked within days.
+updates:
+  - package-ecosystem: npm # also covers yarn 4 and yarn.lock
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    versioning-strategy: increase
+    commit-message:
+      prefix: build
+      prefix-development: build
+      include: scope
+    open-pull-requests-limit: 10
+    groups:
+      babel:
+        patterns: ['@babel/*', 'babel-jest']
+      jest:
+        patterns: ['jest', 'jest-*', '@types/jest']
+      eslint:
+        patterns: ['eslint', '@eslint/*', 'typescript-eslint', 'globals']
+      gitbeaker:
+        patterns: ['@gitbeaker/*']
+      verdaccio:
+        patterns: ['verdaccio', '@verdaccio/*']
+      commitlint:
+        patterns: ['@commitlint/*']
+    ignore:
+      # Deliberate holds; lift them in a reviewed migration, not a bot PR.
+      # verdaccio 7 needs @verdaccio/core 9, which is still a prerelease.
+      - dependency-name: 'verdaccio'
+        update-types: ['version-update:semver-major']
+      - dependency-name: '@verdaccio/*'
+        update-types: ['version-update:semver-major']
+      # The types follow the Node runtime in .nvmrc and the verdaccio image.
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
+      # typescript-eslint does not support TypeScript 7 yet.
+      - dependency-name: 'typescript'
+        update-types: ['version-update:semver-major']
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: ci
+    groups:
+      actions:
+        patterns: ['*']
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: build
+      include: scope
+    ignore:
+      # The runtime image follows the verdaccio major in package.json.
+      - dependency-name: 'verdaccio/verdaccio'
+        update-types: ['version-update:semver-major']
+      # The builder stays on the Node major of the verdaccio runtime image.
+      - dependency-name: 'node'
+        update-types: ['version-update:semver-major']
