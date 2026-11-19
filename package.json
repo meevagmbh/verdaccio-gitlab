@@ -82,7 +82,7 @@
     "markdownlint-cli": "^0.50.0",
     "oxlint": "1.93.0",
     "pinst": "3.0.0",
-    "prettier": "3.10.0",
+    "prettier": "3.10.1",
     "rimraf": "^6.1.4",
     "typescript": "6.0.3",
     "verdaccio": "6.11.1",
