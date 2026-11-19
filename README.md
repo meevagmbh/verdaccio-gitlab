@@ -305,14 +305,14 @@ branch and the tag to the git remote that points to the repository in
 `package.json` (`scripts/release-remote.sh` finds it; the release stops if no
 remote or more than one matches).
 
-Finally publish the package to npm:
+The tag starts the `Release` workflow. It builds the Docker image from the
+tag, runs `scripts/docker-smoke-test.sh` on it and pushes it to
+`ghcr.io/meevagmbh/verdaccio-gitlab` as `X.Y.Z`, `X.Y`, `X` and `latest`
+(a prerelease such as `X.Y.Z-rc.1` gets only its own tag). To roll back, run
+the image of an earlier version.
 
-```sh
-yarn npm publish
-```
-
-`yarn npm publish` (and `yarn pack`) run the `prepack` script, which lints and
-builds `build/` from a clean state before the tarball is created.
+The package is not published to npm: the name `verdaccio-gitlab` on npmjs
+belongs to the upstream project.
 
 ### Functional Tests
 
