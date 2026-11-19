@@ -3,7 +3,7 @@
 
 import { errorUtils, pluginUtils } from '@verdaccio/core';
 import { Callback, Logger, RemoteUser, PackageAccess } from '@verdaccio/types';
-import Gitlab from 'gitlab';
+import { Groups, Projects, Users } from '@gitbeaker/rest';
 
 import { UserDataGroups } from './authcache';
 import { AuthCache, UserData } from './authcache';
@@ -39,9 +39,10 @@ const BUILTIN_ACCESS_LEVEL_ANONYMOUS = ['$anonymous', '$all'];
 const DEFAULT_ALLOW_ACCESS_LEVEL = ['$all'];
 
 // Page size for the group and project queries. The GitLab API defaults to 20
-// and caps at 100, and the library passes this straight through to the query
-// string. On an instance with a few hundred projects this is the difference
-// between roughly 32 requests per login and roughly 7.
+// and caps at 100, and the client passes this straight through to the query
+// string, then follows the `Link: rel="next"` header for further pages. On
+// an instance with a few hundred projects this is the difference between
+// roughly 32 requests per login and roughly 7.
 const GITLAB_PAGE_SIZE = 100;
 
 export default class VerdaccioGitLab
@@ -53,6 +54,10 @@ export default class VerdaccioGitLab
   private authCache?: AuthCache;
   private logger: Logger;
   private publishLevel: VerdaccioGitlabAccessLevel;
+  // The client joins host and "api/v4" with a slash, so a trailing slash in
+  // the configured url would turn into "//api/v4". Left undefined without a
+  // url, so the client falls back to its default, https://gitlab.com.
+  private gitlabHost?: string;
   // Walks that are currently running, keyed by credentials. The auth cache is
   // only written once a walk finishes, so without this every request that
   // arrives while one is in flight starts its own walk against gitlab.
@@ -62,6 +67,9 @@ export default class VerdaccioGitLab
     super(config, options);
     this.logger = options.logger;
     this.logger.info(`[gitlab] url: ${this.config.url}`);
+    if (typeof this.config.url === 'string') {
+      this.gitlabHost = this.config.url.replace(/\/+$/, '');
+    }
 
     if ((this.config.authCache || {}).enabled === false) {
       this.logger.info('[gitlab] auth cache disabled');
@@ -126,12 +134,14 @@ export default class VerdaccioGitLab
   // verdaccio error to hand back. Split out of authenticate() so that a single
   // walk can be shared by concurrent logins.
   private _queryUserGroups(user: string, password: string): Promise<string[]> {
-    const GitlabAPI = new Gitlab({
-      url: this.config.url,
-      token: password,
-    });
+    // Only the three resources the walk needs: the client's all-in-one Gitlab
+    // class builds every resource it knows on each login.
+    const clientOptions = { host: this.gitlabHost, token: password };
+    const users = new Users(clientOptions);
+    const groups = new Groups(clientOptions);
+    const projects = new Projects(clientOptions);
 
-    return GitlabAPI.Users.current().then(
+    return users.showCurrentUser().then(
       response => {
         if (user.toLowerCase() !== response.username.toLowerCase()) {
           return Promise.reject(errorUtils.getUnauthorized('wrong gitlab username'));
@@ -142,16 +152,16 @@ export default class VerdaccioGitLab
         // Set the groups of an authenticated user, in normal mode:
         // - for access, depending on the package settings in verdaccio
         // - for publish, the logged in user id and all the groups they can reach as configured with access level `$auth.gitlab.publish`
-        const gitlabPublishQueryParams = { min_access_level: publishLevelId, per_page: GITLAB_PAGE_SIZE };
+        const gitlabPublishQueryParams = { minAccessLevel: publishLevelId, perPage: GITLAB_PAGE_SIZE };
 
         this.logger.trace('[gitlab] querying gitlab user groups with params:', gitlabPublishQueryParams.toString());
 
-        const groupsPromise = GitlabAPI.Groups.all(gitlabPublishQueryParams).then(groups => {
-          return groups.filter(group => group.path === group.full_path).map(group => group.path);
+        const groupsPromise = groups.all<false, 'offset'>(gitlabPublishQueryParams).then(groupList => {
+          return groupList.filter(group => group.path === group.full_path).map(group => group.path);
         });
 
-        const projectsPromise = GitlabAPI.Projects.all(gitlabPublishQueryParams).then(projects => {
-          return projects.map(project => project.path_with_namespace);
+        const projectsPromise = projects.all<false, 'offset'>(gitlabPublishQueryParams).then(projectList => {
+          return projectList.map(project => project.path_with_namespace);
         });
 
         return Promise.all([groupsPromise, projectsPromise]).then(

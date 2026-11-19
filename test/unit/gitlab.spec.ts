@@ -1,13 +1,12 @@
 import { Callback, RemoteUser } from '@verdaccio/types';
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import Gitlab from 'gitlab';
+import '@gitbeaker/rest';
 
 import { VerdaccioGitlabPackageAccess } from '../../src/gitlab';
 import VerdaccioGitlab from '../../src/gitlab';
 
 import config from './partials/config';
 
-// Do not remove, this mocks the gitlab library
+// Do not remove the @gitbeaker/rest import above, test/__mocks__ replaces the library
 
 describe('Gitlab Auth Plugin Unit Tests', () => {
   test('should create a plugin instance', () => {

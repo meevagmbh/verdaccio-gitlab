@@ -1,10 +1,10 @@
-import Gitlab from 'gitlab';
+import * as GitbeakerRest from '@gitbeaker/rest';
 
 import VerdaccioGitlab from '../../src/gitlab';
 
 import config from './partials/config';
 
-const calls = (Gitlab as any).__calls;
+const calls = (GitbeakerRest as any).__calls;
 
 function authenticate(plugin: VerdaccioGitlab, user: string, pass: string): Promise<string[]> {
   return new Promise((resolve, reject) => {
@@ -93,7 +93,8 @@ describe('Gitlab Auth Plugin concurrency', () => {
     const plugin: VerdaccioGitlab = new VerdaccioGitlab(config.verdaccioGitlabConfig, config.options);
 
     return authenticate(plugin, config.user, config.pass).then(() => {
-      const expected = { min_access_level: 40, per_page: 100 };
+      // The client decamelizes these into min_access_level=40&per_page=100.
+      const expected = { minAccessLevel: 40, perPage: 100 };
 
       expect(calls.groupsAll).toHaveBeenCalledWith(expected);
       expect(calls.projectsAll).toHaveBeenCalledWith(expected);
