@@ -11,7 +11,7 @@
     "lint:ts": "oxlint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "lint": "yarn type-check && yarn lint:ts && markdownlint README.md",
+    "lint": "yarn type-check && yarn lint:ts && markdownlint README.md docs",
     "postinstall": "husky || true",
     "prepack": "rimraf build && yarn lint && yarn code:build && pinst --disable",
     "postpack": "pinst --enable",
