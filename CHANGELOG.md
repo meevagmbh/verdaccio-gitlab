@@ -1,3 +1,51 @@
+## [4.0.0](https://github.com/meevagmbh/verdaccio-gitlab/compare/v3.0.1...v4.0.0) (2026-11-19)
+
+### ⚠ BREAKING CHANGES
+
+* **gitlab:** an http auth.gitlab.url now needs
+  `allowInsecureHttp: true`; other schemes and urls without a scheme are
+  rejected at startup.
+* **cache:** authCache.ttl 0 no longer means "never expire". The
+  README promised it, but the code already turned 0 into 300 s silently.
+  A ttl of 0 or below now falls back to 300 s with a warning, so a token
+  revoked in GitLab stops working within one ttl.
+* **gitlab:** authenticated users can no longer read packages in
+  gitlab sections without $all or $anonymous access unless they have the
+  auth.gitlab.access role on the matching group or project. Make sections
+  for public upstream packages $all.
+* **node:** engines.node now requires node 24 or later.
+* **gitlab:** gitlab sections without `access` are no longer public;
+  add `access: $all` where public reads are intended.
+* verdaccio 4 and 5 are no longer supported. The plugin needs
+  verdaccio 6 and node 24.
+
+### Features
+
+* **gitlab:** check read access against gitlab membership ([6d554a2](https://github.com/meevagmbh/verdaccio-gitlab/commit/6d554a2a93c5ed322b1875f2e3625b0189c2ad5f))
+* **gitlab:** limit failed logins per user name ([4af1fca](https://github.com/meevagmbh/verdaccio-gitlab/commit/4af1fca425f38b5422f6f0bd06f939d616fffcde))
+* target verdaccio 6 and drop verdaccio 4 support ([e410342](https://github.com/meevagmbh/verdaccio-gitlab/commit/e4103429af848ebb5273723a65c766b02905e048))
+
+### Bug Fixes
+
+* **cache:** replace node-cache with lru-cache and always expire entries ([8dcfb3c](https://github.com/meevagmbh/verdaccio-gitlab/commit/8dcfb3cd88d64914ed9712cd6cbdf9c621d2fef6))
+* **deps:** declare commons-api as a runtime dependency ([6a7c62c](https://github.com/meevagmbh/verdaccio-gitlab/commit/6a7c62c10e743652efe51f8e620d3122e0956ccd))
+* **deps:** drop global-tunnel-ng for node's built-in proxy support ([78e3552](https://github.com/meevagmbh/verdaccio-gitlab/commit/78e3552a681c29fa995e4540aaf1c914ac1cec97))
+* **deps:** replace the gitlab client with @gitbeaker/rest ([4028e2b](https://github.com/meevagmbh/verdaccio-gitlab/commit/4028e2ba9b8661ffee7cc89062f881f79765dadd))
+* **dev:** make yarn start work on yarn 4 and verdaccio 6 ([7063ffb](https://github.com/meevagmbh/verdaccio-gitlab/commit/7063ffb75680f4330bb8fb5c53196408f7575dc6))
+* **dev:** point the vscode launch config at the babel build ([9d7ec14](https://github.com/meevagmbh/verdaccio-gitlab/commit/9d7ec14276ccb71062201cf5d15555a437750681))
+* **gitlab:** do not follow redirects from gitlab ([dc9aeaf](https://github.com/meevagmbh/verdaccio-gitlab/commit/dc9aeafbd107f2141038c8f14d11ce799739b832))
+* **gitlab:** do not treat a section without access as public ([e66d25f](https://github.com/meevagmbh/verdaccio-gitlab/commit/e66d25f43e470bc78a99babff71601983801e567))
+* **gitlab:** give up retrying 429 and 502 after 5 seconds ([936a346](https://github.com/meevagmbh/verdaccio-gitlab/commit/936a346e5a37aa0adc2344649eed6898516d6f27))
+* **gitlab:** require https for the gitlab url ([6554aaa](https://github.com/meevagmbh/verdaccio-gitlab/commit/6554aaa9b5d46b048509d4872897ac703ba8aade))
+* **gitlab:** stop re-walking every group and project per npm request ([ee6bd8e](https://github.com/meevagmbh/verdaccio-gitlab/commit/ee6bd8ea739f6aa17c1ad1520bb2e50af41a1da9)), closes [bufferoverflow/verdaccio-gitlab#125](https://github.com/bufferoverflow/verdaccio-gitlab/issues/125)
+* **log:** log rejected logins and denied requests above debug ([9428ea1](https://github.com/meevagmbh/verdaccio-gitlab/commit/9428ea15478c99dd89d99003b3c73e71389245fd))
+* **log:** pass request data as sanitized log fields ([7328aa9](https://github.com/meevagmbh/verdaccio-gitlab/commit/7328aa929e588ca1b92a360c10d04a07b05ce72d))
+* update node version to fix an issue with the docker build process ([7344c0e](https://github.com/meevagmbh/verdaccio-gitlab/commit/7344c0e7f309e135242a00513e7cceae7db24d06))
+
+### Build System
+
+* **node:** build and develop on node 24 ([3099719](https://github.com/meevagmbh/verdaccio-gitlab/commit/3099719e779e6396f167029a599b104849121c77))
+
 #### 3.0.1 (2020-01-15)
 
 ##### Chores
