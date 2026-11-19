@@ -29,7 +29,9 @@ yarn install
 yarn start
 ```
 
-> **NOTE**: Define `http_proxy` environment variable if you are behind a proxy.
+> **NOTE**: If you are behind a proxy, define the `http_proxy`/`https_proxy`
+> environment variables and also set `NODE_USE_ENV_PROXY=1`. The GitLab client
+> uses Node's built-in `fetch`, which ignores the proxy variables without it.
 
 Verdaccio is now up and running. In order the see this plugin in action, you can
 use the following Verdaccio configuration in your `~/.config/verdaccio/config.yaml`.
