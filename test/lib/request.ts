@@ -141,7 +141,8 @@ function smartRequest(options: any): Promise<any> {
   const promiseResult: Promise<any> = new PromiseAssert(function (resolve, reject) {
     // Start on the next microtask, so a chained .send(data) can still set the body.
     queueMicrotask(() => {
-      performRequest(options, smartObject[requestData]).then(resolve, reject);
+      // then(resolve, reject) settles the outer promise; nothing is left to handle.
+      void performRequest(options, smartObject[requestData]).then(resolve, reject);
     });
   });
 

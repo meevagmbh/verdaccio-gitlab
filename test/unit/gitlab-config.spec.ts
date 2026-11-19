@@ -6,7 +6,7 @@ import config from './partials/config';
 // must use TLS unless the operator explicitly accepts plain http.
 
 function create(gitlabConfig: Record<string, unknown>): VerdaccioGitlab {
-  return new VerdaccioGitlab({ ...config.verdaccioGitlabConfig, ...gitlabConfig } as any, config.options);
+  return new VerdaccioGitlab({ ...config.verdaccioGitlabConfig, ...gitlabConfig }, config.options);
 }
 
 describe('Gitlab Auth Plugin url configuration', () => {
