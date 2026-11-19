@@ -315,24 +315,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/node@npm:7.29.7":
-  version: 7.29.7
-  resolution: "@babel/node@npm:7.29.7"
-  dependencies:
-    "@babel/register": "npm:^7.29.7"
-    commander: "npm:^6.2.0"
-    core-js: "npm:^3.48.0"
-    node-environment-flags: "npm:^1.0.5"
-    regenerator-runtime: "npm:^0.14.0"
-    v8flags: "npm:^3.1.1"
-  peerDependencies:
-    "@babel/core": ^7.0.0-0
-  bin:
-    babel-node: ./bin/babel-node.js
-  checksum: 10c0/5147e2a90b3eb7d8c2657abadf007829fec5ab9226d7f6203c9eb9b7acba153151cbb3b1c530da0e5e9e95e0aa2d6adc2f5f33e4bf03cb54d63bb262d77a09bf
-  languageName: node
-  linkType: hard
-
 "@babel/parser@npm:^7.1.0":
   version: 7.7.7
   resolution: "@babel/parser@npm:7.7.7"
@@ -1368,7 +1350,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/register@npm:7.29.13, @babel/register@npm:^7.29.7":
+"@babel/register@npm:7.29.13":
   version: 7.29.13
   resolution: "@babel/register@npm:7.29.13"
   dependencies:
@@ -4660,13 +4642,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"core-js@npm:^3.48.0":
-  version: 3.51.0
-  resolution: "core-js@npm:3.51.0"
-  checksum: 10c0/1c10402cb9e8748c17327a68ba7a69e535d125cc81b63261506400681bdd814c6267c55fbc51fafd71d3094dcb25f5f41cc1bc5caba6a15118c73aec9653dd3b
-  languageName: node
-  linkType: hard
-
 "core-util-is@npm:1.0.2, core-util-is@npm:~1.0.0":
   version: 1.0.2
   resolution: "core-util-is@npm:1.0.2"
@@ -6598,15 +6573,6 @@ __metadata:
   dependencies:
     function-bind: "npm:^1.1.2"
   checksum: 10c0/2d8de939e270b70618f8cebb69746620db10617dbb495bc66ddad326955ea24d3ca4af133aff3eb7c1853e0218f867bc2b050ec26fe02e3aea58f880ffc5e506
-  languageName: node
-  linkType: hard
-
-"homedir-polyfill@npm:^1.0.1":
-  version: 1.0.3
-  resolution: "homedir-polyfill@npm:1.0.3"
-  dependencies:
-    parse-passwd: "npm:^1.0.0"
-  checksum: 10c0/3c099844f94b8b438f124bd5698bdcfef32b2d455115fb8050d7148e7f7b95fc89ba9922586c491f0e1cdebf437b1053c84ecddb8d596e109e9ac69c5b4a9e27
   languageName: node
   linkType: hard
 
@@ -8986,16 +8952,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"node-environment-flags@npm:^1.0.5":
-  version: 1.0.6
-  resolution: "node-environment-flags@npm:1.0.6"
-  dependencies:
-    object.getownpropertydescriptors: "npm:^2.0.3"
-    semver: "npm:^5.7.0"
-  checksum: 10c0/8be86f294f8b065a1e126e9ceb7a4b38b75eb7ec6391060e6e093ab9649e5c1fa977f2a5fe799b6ada862d65ce8259d1b7eabf2057774d641306e467d58cb96b
-  languageName: node
-  linkType: hard
-
 "node-fetch@npm:cjs":
   version: 2.6.7
   resolution: "node-fetch@npm:2.6.7"
@@ -9555,13 +9511,6 @@ __metadata:
   dependencies:
     xtend: "npm:~4.0.1"
   checksum: 10c0/7d0c1f94b4d400ac8605e6d18aced0139e15a08f3dc886567894953727db82bb387febb9a7a6837a4809ca75abd32364bb54d447c050db4a017754ff8949c1fa
-  languageName: node
-  linkType: hard
-
-"parse-passwd@npm:^1.0.0":
-  version: 1.0.0
-  resolution: "parse-passwd@npm:1.0.0"
-  checksum: 10c0/1c05c05f95f184ab9ca604841d78e4fe3294d46b8e3641d305dcc28e930da0e14e602dbda9f3811cd48df5b0e2e27dbef7357bf0d7c40e41b18c11c3a8b8d17b
   languageName: node
   linkType: hard
 
@@ -10349,13 +10298,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"regenerator-runtime@npm:^0.14.0":
-  version: 0.14.1
-  resolution: "regenerator-runtime@npm:0.14.1"
-  checksum: 10c0/1b16eb2c4bceb1665c89de70dcb64126a22bc8eb958feef3cd68fe11ac6d2a4899b5cd1b80b0774c7c03591dc57d16631a7f69d2daa2ec98100e2f29f7ec4cc4
-  languageName: node
-  linkType: hard
-
 "regexpu-core@npm:^6.5.4":
   version: 6.5.4
   resolution: "regexpu-core@npm:6.5.4"
@@ -10777,7 +10719,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"semver@npm:2 || 3 || 4 || 5, semver@npm:^5.0.3, semver@npm:^5.1.0, semver@npm:^5.2.0, semver@npm:^5.5.0, semver@npm:^5.6.0, semver@npm:^5.7.0":
+"semver@npm:2 || 3 || 4 || 5, semver@npm:^5.0.3, semver@npm:^5.1.0, semver@npm:^5.2.0, semver@npm:^5.5.0, semver@npm:^5.6.0":
   version: 5.7.1
   resolution: "semver@npm:5.7.1"
   bin:
@@ -12269,15 +12211,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"v8flags@npm:^3.1.1":
-  version: 3.1.3
-  resolution: "v8flags@npm:3.1.3"
-  dependencies:
-    homedir-polyfill: "npm:^1.0.1"
-  checksum: 10c0/5ab6e7a4e97f10ea4b96389e223276e7f9d8073cb79a9f086b3a02b6f1a5ef7bd3ae27ee2eb3cef6b5ddb8244dc3a04f7a8cf74e3794478ba0d7bb341dc4ef95
-  languageName: node
-  linkType: hard
-
 "validate-npm-package-license@npm:^3.0.1":
   version: 3.0.4
   resolution: "validate-npm-package-license@npm:3.0.4"
@@ -12330,7 +12263,6 @@ __metadata:
   dependencies:
     "@babel/cli": "npm:7.29.7"
     "@babel/core": "npm:7.29.13"
-    "@babel/node": "npm:7.29.7"
     "@babel/preset-env": "npm:7.29.14"
     "@babel/preset-typescript": "npm:7.29.7"
     "@babel/register": "npm:7.29.13"
