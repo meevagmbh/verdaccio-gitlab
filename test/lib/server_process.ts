@@ -1,8 +1,7 @@
 import path from 'path';
 import { fork } from 'child_process';
 
-import rimRaf from 'rimraf';
-import _ from 'lodash';
+import { rimraf } from 'rimraf';
 
 import { CREDENTIALS, DOMAIN_SERVERS } from '../functional/config.functional';
 import { IVerdaccioConfig, IServerBridge, IServerProcess } from '../types';
@@ -34,13 +33,9 @@ export default class VerdaccioProcess implements IServerProcess {
   public init(verdaccioPath = '../../bin/verdaccio'): Promise<any> {
     return new Promise((resolve, reject) => {
       if (this.cleanStore) {
-        rimRaf(this.config.storagePath, err => {
-          if (_.isNil(err) === false) {
-            reject(err);
-          }
-
-          this._start(verdaccioPath, resolve, reject);
-        });
+        rimraf(this.config.storagePath)
+          .catch(reject)
+          .then(() => this._start(verdaccioPath, resolve, reject));
       } else {
         this._start(verdaccioPath, resolve, reject);
       }
