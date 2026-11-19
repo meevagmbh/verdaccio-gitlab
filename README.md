@@ -25,6 +25,7 @@ official verdaccio 6 image runs on.
 ```sh
 git clone https://github.com/bufferoverflow/verdaccio-gitlab.git
 cd verdaccio-gitlab
+corepack enable # installs the yarn version pinned in package.json
 yarn install
 yarn start
 ```
@@ -241,8 +242,11 @@ In order to run functional tests with debug output, set the
 [as documented by verdaccio](https://github.com/verdaccio/verdaccio/wiki/Running-and-Debugging-tests):
 
 ```bash
+yarn code:build
 VERDACCIO_DEBUG=true yarn test:functional
 ```
+
+The functional tests start verdaccio from `build/`, so build the plugin first.
 
 ## License
 
