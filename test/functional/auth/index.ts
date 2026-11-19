@@ -3,9 +3,7 @@
 import { CREDENTIALS, WRONG_CREDENTIALS } from '../config.functional';
 import { HTTP_STATUS } from '../../lib/constants';
 
-export default (server: any, gitlab: any) => {
-  // eslint-disable-line no-unused-vars
-
+export default (server: any, _gitlab: any) => {
   describe('authentication tests', () => {
     test('should authenticate user', () => {
       return server

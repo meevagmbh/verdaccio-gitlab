@@ -19,15 +19,11 @@ export interface IServerProcess {
   stop(): void;
 }
 
-declare class PromiseAssert<IRequestPromise> extends Promise<any> {
-  public constructor(options: any);
-}
-
 export interface IServerBridge {
   url: string;
   userAgent: string;
   authstr: string;
-  request(options: any): typeof PromiseAssert;
+  request(options: any): Promise<any> & IRequestPromise;
   auth(name: string, password: string): IRequestPromise;
   auth(name: string, password: string): IRequestPromise;
   logout(token: string): Promise<any>;
@@ -39,7 +35,7 @@ export interface IServerBridge {
   removeTarball(name: string): Promise<any>;
   removeSingleTarball(name: string, filename: string): Promise<any>;
   addTag(name: string, tag: string, version: string): Promise<any>;
-  putTarballIncomplete(name: string, filename: string, data: any, size: number, cb: Function): Promise<any>;
+  putTarballIncomplete(name: string, filename: string, data: any, size: number, cb: (...args: any[]) => void): Promise<any>;
   addPackage(name: string): Promise<any>;
   whoami(): Promise<any>;
   ping(): Promise<any>;
