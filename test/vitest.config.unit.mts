@@ -21,6 +21,14 @@ export default defineConfig({
       enabled: true,
       provider: 'v8',
       include: ['src/*.ts'],
+      // Floors just below the coverage reached when they were set, so a
+      // change that drops coverage fails the run. Raise them as tests grow.
+      thresholds: {
+        statements: 91,
+        branches: 79,
+        functions: 89,
+        lines: 91,
+      },
     },
   },
 });
