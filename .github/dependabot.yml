@@ -34,9 +34,6 @@ updates:
       # The types follow the Node runtime in .nvmrc and the verdaccio image.
       - dependency-name: '@types/node'
         update-types: ['version-update:semver-major']
-      # TypeScript 7 (the native compiler) is a migration of its own.
-      - dependency-name: 'typescript'
-        update-types: ['version-update:semver-major']
 
   - package-ecosystem: github-actions
     directory: /
