@@ -44,6 +44,29 @@ describe('Gitlab Auth Plugin concurrency', () => {
     });
   });
 
+  test('concurrent logins with different credentials do not share a walk', () => {
+    const plugin: VerdaccioGitlab = new VerdaccioGitlab(config.verdaccioGitlabConfig, config.options);
+
+    // Start both before either resolves. If the in-flight key ignored the
+    // password, the wrong-password login would join the valid walk and succeed.
+    const valid = authenticate(plugin, config.user, config.pass);
+    const invalid = authenticate(plugin, config.user, config.pass + '_wrong');
+
+    return Promise.all([
+      valid,
+      invalid.then(
+        () => {
+          throw new Error('authentication with a wrong password should have failed');
+        },
+        error => error
+      ),
+    ]).then(([groups, error]) => {
+      expect(groups).toContain('myGroup');
+      expect(error).toBeTruthy();
+      expect(calls.usersCurrent).toHaveBeenCalledTimes(2);
+    });
+  });
+
   test('a failed walk is not cached, so the next login retries', () => {
     const plugin: VerdaccioGitlab = new VerdaccioGitlab(config.verdaccioGitlabConfig, config.options);
     const wrongPass = config.pass + '_wrong';
