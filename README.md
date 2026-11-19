@@ -341,6 +341,10 @@ VERDACCIO_DEBUG=true yarn test:functional
 
 The functional tests start verdaccio from `build/`, so build the plugin first.
 
+The tests run in random order, so none may rely on another one running first.
+To repeat a failing order, pass the seed vitest prints at the start:
+`yarn test:functional --sequence.seed=<seed>`.
+
 ## License
 
 [MIT](https://spdx.org/licenses/MIT)
