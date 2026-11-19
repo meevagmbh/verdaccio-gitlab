@@ -2585,10 +2585,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/lodash@npm:^4.14.149":
-  version: 4.14.149
-  resolution: "@types/lodash@npm:4.14.149"
-  checksum: 10c0/316831950c937402a026b5e1a65e6ac4a40992ac447b786d801c30a36697bb200865e9ca31c38962033c067bf70be9c12bcd74c5624e18647765beea7dba96ef
+"@types/lodash@npm:^4.17.27":
+  version: 4.17.27
+  resolution: "@types/lodash@npm:4.17.27"
+  checksum: 10c0/3769c022437664352a78234b8d9f6ba24693893552ef4192e507bbc7412dc621098afad0bc36f9d03855f629b143c01f3574afb2f818abcb447ebba066ad16bf
   languageName: node
   linkType: hard
 
@@ -6933,17 +6933,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lodash@npm:4, lodash@npm:4.18.1":
+"lodash@npm:4, lodash@npm:4.18.1, lodash@npm:^4.17.13, lodash@npm:^4.18.1":
   version: 4.18.1
   resolution: "lodash@npm:4.18.1"
   checksum: 10c0/757228fc68805c59789e82185135cf85f05d0b2d3d54631d680ca79ec21944ec8314d4533639a14b8bcfbd97a517e78960933041a5af17ecb693ec6eecb99a27
-  languageName: node
-  linkType: hard
-
-"lodash@npm:^4.17.13, lodash@npm:^4.17.15":
-  version: 4.17.21
-  resolution: "lodash@npm:4.17.21"
-  checksum: 10c0/d8cbea072bb08655bb4c989da418994b073a608dffa608b09ac04b43a791b12aeae7cd7ad919aa4c925f33b48490b5cfe6c1f71d827956071dae2e7bb3a6b74c
   languageName: node
   linkType: hard
 
@@ -9613,7 +9606,7 @@ __metadata:
     "@gitbeaker/requester-utils": "npm:44.0.5"
     "@gitbeaker/rest": "npm:44.0.5"
     "@types/jest": "npm:30.0.0"
-    "@types/lodash": "npm:^4.14.149"
+    "@types/lodash": "npm:^4.17.27"
     "@types/node": "npm:24.19.2"
     "@verdaccio/core": "npm:8.4.0"
     "@verdaccio/types": "npm:13.1.0"
@@ -9630,7 +9623,7 @@ __metadata:
     jest-environment-node: "npm:30.5.2"
     kleur: "npm:3.0.3"
     license-checker: "npm:^25.0.1"
-    lodash: "npm:^4.17.15"
+    lodash: "npm:^4.18.1"
     lru-cache: "npm:11.5.3"
     markdownlint-cli: "npm:^0.20.0"
     pinst: "npm:3.0.0"
