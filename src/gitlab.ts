@@ -76,9 +76,8 @@ export default class VerdaccioGitLab
     if ((this.config.authCache || {}).enabled === false) {
       this.logger.info('[gitlab] auth cache disabled');
     } else {
-      const ttl = (this.config.authCache || {}).ttl || AuthCache.DEFAULT_TTL;
-      this.authCache = new AuthCache(this.logger, ttl);
-      this.logger.info(`[gitlab] initialized auth cache with ttl: ${ttl} seconds`);
+      this.authCache = new AuthCache(this.logger, (this.config.authCache || {}).ttl);
+      this.logger.info(`[gitlab] initialized auth cache with ttl: ${this.authCache.ttl} seconds`);
     }
 
 

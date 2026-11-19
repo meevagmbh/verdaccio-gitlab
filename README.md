@@ -168,7 +168,7 @@ auth:
 | ------ | ------- | ---- | ----------- |
 | `url` | `<empty>` | url | mandatory, the url of the gitlab server |
 | `authCache: enabled` | `true` | boolean | activate in-memory authentication cache |
-| `authCache: ttl` | `300` (`0`=unlimited) | integer | time-to-live of entries in the authentication cache, in seconds |
+| `authCache: ttl` | `300` | integer | time-to-live of entries in the authentication cache, in seconds; must be positive |
 | `publish` | `$maintainer` | [`$guest`, `$reporter`, `$developer`, `$maintainer`, `$owner`] | group minimum access level of the logged in user required for npm publish operations |
 <!-- markdownlint-enable MD013 -->
 
@@ -182,10 +182,14 @@ No clear-text password is saved in-memory, just an SHA-256 hash of
 the user+password, plus the groups information.
 
 By default, the cache will be enabled and the credentials will be stored
-for 300 seconds. The ttl is checked on access, but there's also an
-internal timer that will check expired values regularly, so data of
-users not actively interacting with the system will also be eventually
-invalidated.
+for 300 seconds. The ttl is checked on access, and expired entries are
+also removed on a timer, so data of users not actively interacting with
+the system is invalidated as well.
+
+Entries always expire: a `ttl` of `0` or below falls back to the default
+of 300 seconds with a warning, so a token revoked in GitLab stops working
+within one ttl. The cache holds at most 10000 entries; when it is full,
+the least recently used entry is dropped.
 
 > *Please note* that this implementation is in-memory and not
 multi-process; if the cluster module is used for starting several
