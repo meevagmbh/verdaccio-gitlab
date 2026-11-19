@@ -1,9 +1,8 @@
 import { CREDENTIALS, PACKAGE } from '../config.functional';
 import { API_ERROR, HTTP_STATUS } from '../../lib/constants';
+import fixturePkg from '../fixtures/package';
 
 export default (server: any, _gitlab: any) => {
-  // eslint-disable-line no-unused-vars
-
   describe('package access tests', () => {
     beforeEach(() => {
       return server.auth(CREDENTIALS.user, CREDENTIALS.password);
@@ -17,6 +16,28 @@ export default (server: any, _gitlab: any) => {
           expect(body).toHaveProperty('name');
           expect(body.name).toBe(PACKAGE.EXISTING_NAME);
         });
+    });
+
+    // 404 shows the read check passed and the package is just missing.
+    test('should allow a group member to read a private package of the group', () => {
+      return server.getPackage(PACKAGE.MEMBER_SCOPED_MISSING_NAME).status(HTTP_STATUS.NOT_FOUND);
+    });
+
+    test('should deny reading a private package of a group the user is not a member of', () => {
+      return server
+        .getPackage(PACKAGE.FOREIGN_SCOPED_NAME)
+        .status(HTTP_STATUS.FORBIDDEN)
+        .then(body => {
+          expect(body.error).toMatch(/permissions/);
+        });
+    });
+
+    test('should allow any logged-in user to read a section without gitlab: true', () => {
+      return server.getPackage(PACKAGE.OPEN_SCOPED_NAME).status(HTTP_STATUS.NOT_FOUND);
+    });
+
+    test('should deny publishing to a section without publish', () => {
+      return server.putPackage(PACKAGE.OPEN_SCOPED_NAME, fixturePkg(PACKAGE.OPEN_SCOPED_NAME)).status(HTTP_STATUS.FORBIDDEN);
     });
 
     test('should fail with non-existing package', () => {

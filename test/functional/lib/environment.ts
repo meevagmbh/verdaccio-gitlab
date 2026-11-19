@@ -1,7 +1,7 @@
 import path from 'path';
 
 import { yellow, green, blue, magenta } from 'kleur';
-import NodeEnvironment from 'jest-environment-node';
+import { TestEnvironment } from 'jest-environment-node';
 
 import { VerdaccioConfig } from '../../lib/verdaccio-server';
 import VerdaccioProcess from '../../lib/server_process';
@@ -11,11 +11,9 @@ import { PORT_GITLAB_EXPRESS_MOCK, DOMAIN_SERVERS, PORT_SERVER_1 } from '../conf
 
 import GitlabServer from './mock_gitlab_server';
 
-class FunctionalEnvironment extends NodeEnvironment {
-  private config: any;
-
-  public constructor(config: any) {
-    super(config);
+class FunctionalEnvironment extends TestEnvironment {
+  public constructor(config: any, context: any) {
+    super(config, context);
   }
 
   public async startWeb() {
@@ -76,10 +74,6 @@ class FunctionalEnvironment extends NodeEnvironment {
     }
     // close web server
     this.global.__GITLAB_SERVER__.server.close();
-  }
-
-  private runScript(script: string) {
-    return super.runScript(script);
   }
 }
 

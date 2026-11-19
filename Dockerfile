@@ -1,20 +1,25 @@
-FROM node:22-alpine AS builder
+FROM node:24-alpine AS builder
 
 WORKDIR /opt/verdaccio-gitlab-build
 COPY . .
 
-ENV NODE_ENV=production \
-    VERDACCIO_BUILD_REGISTRY=https://registry.npmjs.org/
+# Registry to install from, e.g. a mirror. yarn 4 reads it from this variable.
+ARG VERDACCIO_BUILD_REGISTRY=https://registry.npmjs.org
+ENV YARN_NPM_REGISTRY_SERVER=$VERDACCIO_BUILD_REGISTRY \
+    COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 
-RUN yarn config set registry $VERDACCIO_BUILD_REGISTRY && \
-    yarn install --production=false && \
+# corepack installs the yarn version pinned in package.json#packageManager.
+# `workspaces focus --production` then strips the dev dependencies again.
+RUN corepack enable && \
+    yarn install --immutable && \
     yarn code:docker-build && \
-    yarn cache clean && \
-    yarn install --production=true --pure-lockfile
+    yarn workspaces focus --all --production && \
+    yarn cache clean --all
 
 
 
-FROM verdaccio/verdaccio:6
+# Keep in step with the verdaccio devDependency in package.json.
+FROM verdaccio/verdaccio:6.11.1
 LABEL maintainer="https://github.com/bufferoverflow/verdaccio-gitlab"
 
 # Go back to root to be able to install the plugin

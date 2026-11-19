@@ -8,9 +8,12 @@ listen:
 auth:
   gitlab:
     url: http://gitlab
+    # The compose network reaches GitLab over plain http only.
+    allowInsecureHttp: true
     authCache:
       enabled: true
       ttl: 300
+    access: $reporter
     publish: $maintainer
 
 uplinks:
@@ -18,19 +21,25 @@ uplinks:
     url: https://registry.npmjs.org/
 
 packages:
-  '@*/*':
-    # scoped packages
-    access: $all
+  # Private packages: one entry per GitLab group that publishes packages.
+  # Reading needs at least auth.gitlab.access ($reporter) and publishing at
+  # least auth.gitlab.publish ($maintainer) on the matching group or project.
+  # No proxy, so a same-named public package cannot shadow them.
+  '@my-group/*':
+    access: $authenticated
     publish: $authenticated
-    proxy: npmjs
     gitlab: true
+
+  # Public packages from npmjs: readable by every logged-in GitLab user,
+  # regardless of group membership. No publish entry, so nobody can publish
+  # here and a private package cannot end up in a public section.
+  '@*/*':
+    access: $authenticated
+    proxy: npmjs
 
   '**':
-    access: $all
-    publish: $authenticated
+    access: $authenticated
     proxy: npmjs
-    gitlab: true
 
-logs:
-  - { type: stdout, format: pretty, level: info }
-  #- {type: file, path: verdaccio.log, level: info}
+# verdaccio 5+ takes a single `log` object; the `logs` list is deprecated.
+log: { type: stdout, format: pretty, level: info }

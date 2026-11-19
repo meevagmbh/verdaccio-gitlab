@@ -5,8 +5,8 @@
             "type": "node",
             "request": "launch",
             "name": "Launch verdaccio",
-            "program": "${workspaceFolder}/lib/verdaccio.js",
-            "preLaunchTask": "npm: build",
+            "program": "${workspaceFolder}/build/verdaccio.js",
+            "preLaunchTask": "npm: code:build",
             "env": {
                 "NODE_PATH": "${workspaceFolder}/..",
                 "NODE_ENV": "development"

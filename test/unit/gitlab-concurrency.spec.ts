@@ -1,10 +1,10 @@
-import Gitlab from 'gitlab';
+import * as GitbeakerRest from '@gitbeaker/rest';
 
 import VerdaccioGitlab from '../../src/gitlab';
 
 import config from './partials/config';
 
-const calls = (Gitlab as any).__calls;
+const calls = (GitbeakerRest as any).__calls;
 
 function authenticate(plugin: VerdaccioGitlab, user: string, pass: string): Promise<string[]> {
   return new Promise((resolve, reject) => {
@@ -35,45 +35,75 @@ describe('Gitlab Auth Plugin concurrency', () => {
 
     return Promise.all(logins).then(results => {
       results.forEach(groups => {
-        expect(groups.sort()).toEqual(['myGroup', 'anotherGroup/myProject', 'myUser'].sort());
+        expect(groups).toEqual(expect.arrayContaining(['myGroup', 'anotherGroup/myProject', 'myUser']));
       });
 
-      expect(calls.groupsAll).toHaveBeenCalledTimes(1);
-      expect(calls.projectsAll).toHaveBeenCalledTimes(1);
+      // One walk: the user, then groups and projects for the read and the
+      // publish role.
+      expect(calls.groupsAll).toHaveBeenCalledTimes(2);
+      expect(calls.projectsAll).toHaveBeenCalledTimes(2);
       expect(calls.usersCurrent).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  test('concurrent logins with different credentials do not share a walk', () => {
+    const plugin: VerdaccioGitlab = new VerdaccioGitlab(config.verdaccioGitlabConfig, config.options);
+
+    // Start both before either resolves. If the in-flight key ignored the
+    // password, the wrong-password login would join the valid walk and succeed.
+    const valid = authenticate(plugin, config.user, config.pass);
+    const invalid = authenticate(plugin, config.user, config.pass + '_wrong');
+
+    return Promise.all([
+      valid,
+      invalid.then(
+        () => {
+          throw new Error('authentication with a wrong password should have failed');
+        },
+        error => error
+      ),
+    ]).then(([groups, error]) => {
+      expect(groups).toContain('myGroup');
+      expect(error).toBeTruthy();
+      expect(calls.usersCurrent).toHaveBeenCalledTimes(2);
     });
   });
 
   test('a failed walk is not cached, so the next login retries', () => {
     const plugin: VerdaccioGitlab = new VerdaccioGitlab(config.verdaccioGitlabConfig, config.options);
-    const wrongPass = config.pass + '_wrong';
+    // A GitLab outage, not a rejected token: GitLab rejecting a token is
+    // remembered on purpose (see gitlab-login-limit.spec.ts).
+    const gitlabUser = calls.usersCurrent.getMockImplementation();
+    calls.usersCurrent.mockImplementation(() => Promise.reject(calls.gitlabError(502, 'Bad Gateway')));
 
-    return authenticate(plugin, config.user, wrongPass)
+    return authenticate(plugin, config.user, config.pass)
       .then(
         () => {
           throw new Error('authentication should have failed');
         },
-        () => authenticate(plugin, config.user, wrongPass).then(
+        () => authenticate(plugin, config.user, config.pass).then(
           () => {
             throw new Error('authentication should have failed');
           },
           () => {
-            // Two attempts must reach gitlab: a rejected walk must not leave a
+            // Two attempts must reach gitlab: a failed walk must not leave a
             // stale entry that makes later logins fail without asking.
             expect(calls.usersCurrent).toHaveBeenCalledTimes(2);
           }
         )
-      );
+      )
+      .finally(() => calls.usersCurrent.mockImplementation(gitlabUser));
   });
 
   test('group and project queries ask for the maximum page size', () => {
     const plugin: VerdaccioGitlab = new VerdaccioGitlab(config.verdaccioGitlabConfig, config.options);
 
     return authenticate(plugin, config.user, config.pass).then(() => {
-      const expected = { min_access_level: 40, per_page: 100 };
+      // The client decamelizes these into min_access_level=40&per_page=100.
+      const expected = { minAccessLevel: 40, perPage: 100 };
 
-      expect(calls.groupsAll).toHaveBeenCalledWith(expected);
-      expect(calls.projectsAll).toHaveBeenCalledWith(expected);
+      expect(calls.groupsAll).toHaveBeenCalledWith(expect.objectContaining(expected));
+      expect(calls.projectsAll).toHaveBeenCalledWith(expect.objectContaining(expected));
     });
   });
 });

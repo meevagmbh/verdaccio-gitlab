@@ -2,7 +2,7 @@ import { CREDENTIALS, PACKAGE, WRONG_CREDENTIALS } from '../config.functional';
 import { HTTP_STATUS } from '../../lib/constants';
 import fixturePkg from '../fixtures/package';
 
-export default (server: any, gitlab: any) => {
+export default (server: any, _gitlab: any) => {
   describe('package publish tests', () => {
     beforeEach(() => {
       return server.auth(CREDENTIALS.user, CREDENTIALS.password);

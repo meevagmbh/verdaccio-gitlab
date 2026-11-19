@@ -6,3 +6,12 @@ tests-report/
 test-storage*
 yarn-error.log
 .idea/*
+
+# yarn 4 (no zero-installs)
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+.pnp.*

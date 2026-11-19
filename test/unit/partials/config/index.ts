@@ -7,7 +7,7 @@ import { UserData } from '../../../../src/authcache';
 
 
 const verdaccioGitlabConfig: VerdaccioGitlabConfig = {
-  url: 'myUrl'
+  url: 'https://gitlab.example.com'
 };
 
 const options: PluginOptions<VerdaccioGitlabConfig> = {

@@ -9,6 +9,7 @@ web:
 auth:
   gitlab:
     url: http://localhost:50080/
+    allowInsecureHttp: true
     authCache:
       enabled: false
     publish: $maintainer
@@ -17,16 +18,32 @@ uplinks:
   npmjs:
     url: https://registry.npmjs.org/
 
-logs:
-  - { type: stdout, format: pretty, level: trace }
+log: { type: stdout, format: pretty, level: trace }
 
 packages:
+  # A public upstream package: $all keeps it readable without membership.
   'verdaccio':
-    access: $authenticated
+    access: $all
     publish: $authenticated
     storage: false
     gitlab: true
     proxy: npmjs
+
+  # Private packages: readable by members of the matching group or project.
+  '@test-group/*':
+    access: $authenticated
+    publish: $authenticated
+    gitlab: true
+
+  '@foreign-group/*':
+    access: $authenticated
+    publish: $authenticated
+    gitlab: true
+
+  # Like a section proxying public npm packages: any logged-in user may
+  # read, nobody may publish, and verdaccio checks it without the plugin.
+  '@open/*':
+    access: $authenticated
 
   '@*/*':
     access: $all

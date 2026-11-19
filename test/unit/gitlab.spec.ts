@@ -1,13 +1,12 @@
 import { Callback, RemoteUser } from '@verdaccio/types';
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import Gitlab from 'gitlab';
+import '@gitbeaker/rest';
 
-import { VerdaccioGitlabPackageAccess } from '../../src/gitlab';
+import { READ_ONLY_PREFIX, VerdaccioGitlabPackageAccess } from '../../src/gitlab';
 import VerdaccioGitlab from '../../src/gitlab';
 
 import config from './partials/config';
 
-// Do not remove, this mocks the gitlab library
+// Do not remove the @gitbeaker/rest import above, test/__mocks__ replaces the library
 
 describe('Gitlab Auth Plugin Unit Tests', () => {
   test('should create a plugin instance', () => {
@@ -21,7 +20,9 @@ describe('Gitlab Auth Plugin Unit Tests', () => {
 
     const cb: Callback = (err, data) => {
       expect(err).toBeFalsy();
-      expect(data.sort()).toEqual(['myGroup', 'anotherGroup/myProject', 'myUser'].sort());
+      expect(data.sort()).toEqual(
+        ['myGroup', 'anotherGroup/myProject', 'myUser', `${READ_ONLY_PREFIX}readGroup`, `${READ_ONLY_PREFIX}readGroup/readProject`].sort()
+      );
       done();
     };
 
@@ -114,7 +115,7 @@ describe('Gitlab Auth Plugin Unit Tests', () => {
     verdaccioGitlab.allow_access(config.remoteUser, _package, cb);
   });
 
-  test('should allow access to package when access level is empty (default = $all)', done => {
+  test('should allow access to own package when the section has no access level', done => {
     const verdaccioGitlab: VerdaccioGitlab = new VerdaccioGitlab(config.verdaccioGitlabConfig, config.options);
     const _package: VerdaccioGitlabPackageAccess = {
       name: config.user,

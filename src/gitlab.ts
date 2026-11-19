@@ -1,9 +1,13 @@
 // Copyright 2018 Roger Meier <roger@bufferoverflow.ch>
 // SPDX-License-Identifier: MIT
 
-import { Callback, IPluginAuth, Logger, PluginOptions, RemoteUser, PackageAccess } from '@verdaccio/types';
-import { getInternalError, getUnauthorized, getForbidden } from '@verdaccio/commons-api';
-import Gitlab from 'gitlab';
+import { errorUtils, pluginUtils } from '@verdaccio/core';
+import { Callback, Logger, RemoteUser, PackageAccess } from '@verdaccio/types';
+import { Groups, Projects, Users } from '@gitbeaker/rest';
+
+import { requesterFn } from './gitlab-requester';
+import { logSafe } from './log-safe';
+import { FailedLoginLimiter } from './login-limiter';
 
 import { UserDataGroups } from './authcache';
 import { AuthCache, UserData } from './authcache';
@@ -12,10 +16,15 @@ export type VerdaccioGitlabAccessLevel = '$guest' | '$reporter' | '$developer' |
 
 export type VerdaccioGitlabConfig = {
   url: string;
+  // Allows an http:// url. Users' GitLab tokens then cross the network in
+  // clear text, so this is meant for a GitLab on the same host or network.
+  allowInsecureHttp?: boolean;
   authCache?: {
     enabled?: boolean;
     ttl?: number;
   };
+  // Minimum GitLab role on the matching group or project to read a package.
+  access?: VerdaccioGitlabAccessLevel;
   publish?: VerdaccioGitlabAccessLevel;
 };
 
@@ -32,41 +41,88 @@ const ACCESS_LEVEL_MAPPING = {
   $owner: 50,
 };
 
-// List of verdaccio builtin levels that map to anonymous access
+// Package access levels that make a section public: anyone may read it.
 const BUILTIN_ACCESS_LEVEL_ANONYMOUS = ['$anonymous', '$all'];
 
-// Level to apply on 'allow_access' calls when a package definition does not define one
-const DEFAULT_ALLOW_ACCESS_LEVEL = ['$all'];
+// Marks groups and projects the user may read from but not publish to. A
+// GitLab path cannot contain a colon, so a marked entry never collides with
+// a real path, and verdaccio stores it like any other group.
+export const READ_ONLY_PREFIX = 'gitlab-read:';
 
 // Page size for the group and project queries. The GitLab API defaults to 20
-// and caps at 100, and the library passes this straight through to the query
-// string. On an instance with a few hundred projects this is the difference
-// between roughly 32 requests per login and roughly 7.
+// and caps at 100, and the client passes this straight through to the query
+// string, then follows the `Link: rel="next"` header for further pages. On
+// an instance with a few hundred projects this is the difference between
+// roughly 32 requests per login and roughly 7.
 const GITLAB_PAGE_SIZE = 100;
 
-export default class VerdaccioGitLab implements IPluginAuth<VerdaccioGitlabConfig> {
-  private options: PluginOptions<VerdaccioGitlabConfig>;
-  private config: VerdaccioGitlabConfig;
+// Group lists can be long; debug logs keep more of them than other fields.
+const GROUPS_LOG_LENGTH = 4000;
+
+// GitLab's answers that reject the token itself, as opposed to GitLab being
+// unreachable, overloaded or failing.
+const TOKEN_REJECTED_STATUSES = [401, 403];
+
+const WRONG_USERNAME = 'wrong gitlab username';
+const AUTHENTICATION_ERROR = 'error authenticating user';
+
+// The HTTP status of GitLab's answer, which the request handler attaches as
+// error.cause.response; undefined for network errors and timeouts.
+function gitlabStatus(error: any): number | undefined {
+  return error?.cause?.response?.status;
+}
+
+// The group or project paths that grant rights on a package: the name itself,
+// and for a scoped name each leading part of it. `@group/pkg` maps to `group`
+// and `group/pkg`; `pkg` maps to `pkg`, which may also be the user name.
+function packageCandidates(packageName: string): string[] {
+  const candidates = [packageName];
+  if (packageName.startsWith('@')) {
+    const parts = packageName.slice(1).split('/');
+    for (let i = 1; i <= parts.length; i += 1) {
+      candidates.push(parts.slice(0, i).join('/'));
+    }
+  }
+  return candidates;
+}
+
+function missingPermission(packageName: string): string {
+  return packageName.startsWith('@') ? 'package-scope' : 'package-name';
+}
+
+export default class VerdaccioGitLab
+  extends pluginUtils.Plugin<VerdaccioGitlabConfig>
+  implements pluginUtils.Auth<VerdaccioGitlabConfig>
+{
+  // The base class stores config and options; this narrows config from unknown.
+  declare public readonly config: VerdaccioGitlabConfig;
   private authCache?: AuthCache;
   private logger: Logger;
   private publishLevel: VerdaccioGitlabAccessLevel;
+  private accessLevel: VerdaccioGitlabAccessLevel;
+  // The client joins host and "api/v4" with a slash, so a trailing slash in
+  // the configured url would turn into "//api/v4". Left undefined without a
+  // url, so the client falls back to its default, https://gitlab.com.
+  private gitlabHost?: string;
   // Walks that are currently running, keyed by credentials. The auth cache is
   // only written once a walk finishes, so without this every request that
   // arrives while one is in flight starts its own walk against gitlab.
   private inflightWalks: Map<string, Promise<string[]>> = new Map();
+  private loginLimiter: FailedLoginLimiter = new FailedLoginLimiter();
 
-  public constructor(config: VerdaccioGitlabConfig, options: PluginOptions<VerdaccioGitlabConfig>) {
+  public constructor(config: VerdaccioGitlabConfig, options: pluginUtils.PluginOptions) {
+    super(config, options);
     this.logger = options.logger;
-    this.config = config;
-    this.options = options;
     this.logger.info(`[gitlab] url: ${this.config.url}`);
+    if (typeof this.config.url === 'string') {
+      this.gitlabHost = this._checkedUrl(this.config.url).replace(/\/+$/, '');
+    }
 
     if ((this.config.authCache || {}).enabled === false) {
       this.logger.info('[gitlab] auth cache disabled');
     } else {
-      const ttl = (this.config.authCache || {}).ttl || AuthCache.DEFAULT_TTL;
-      this.authCache = new AuthCache(this.logger, ttl);
-      this.logger.info(`[gitlab] initialized auth cache with ttl: ${ttl} seconds`);
+      this.authCache = new AuthCache(this.logger, (this.config.authCache || {}).ttl);
+      this.logger.info(`[gitlab] initialized auth cache with ttl: ${this.authCache.ttl} seconds`);
     }
 
 
@@ -79,31 +135,74 @@ export default class VerdaccioGitLab implements IPluginAuth<VerdaccioGitlabConfi
       throw Error(`[gitlab] invalid publish access level configuration: ${this.publishLevel}`);
     }
     this.logger.info(`[gitlab] publish control level: ${this.publishLevel}`);
+
+    this.accessLevel = this.config.access || '$reporter';
+    if (!Object.keys(ACCESS_LEVEL_MAPPING).includes(this.accessLevel)) {
+      throw Error(`[gitlab] invalid access level configuration: ${this.accessLevel}`);
+    }
+    this.logger.info(`[gitlab] access control level: ${this.accessLevel}`);
+  }
+
+  // Every user's GitLab token goes to this url, so it has to use TLS unless
+  // the operator explicitly accepts plain http.
+  private _checkedUrl(url: string): string {
+    let protocol: string;
+    try {
+      protocol = new URL(url).protocol;
+    } catch {
+      throw Error(`[gitlab] invalid auth.gitlab.url: ${url}`);
+    }
+    if (protocol === 'https:') {
+      return url;
+    }
+    if (protocol === 'http:') {
+      if (this.config.allowInsecureHttp === true) {
+        this.logger.warn('[gitlab] auth.gitlab.url uses http: GitLab tokens are sent unencrypted');
+        return url;
+      }
+      throw Error('[gitlab] auth.gitlab.url must use https; set auth.gitlab.allowInsecureHttp: true to accept http');
+    }
+    throw Error(`[gitlab] auth.gitlab.url must use https, got ${protocol}`);
   }
 
   public authenticate(user: string, password: string, cb: Callback) {
-    this.logger.trace(`[gitlab] authenticate called for user: ${user}`);
+    this.logger.trace({ user: logSafe(user) }, '[gitlab] authenticate called for user: @{user}');
 
     // Try to find the user groups in the cache
     const cachedUserGroups = this._getCachedUserGroups(user, password);
     if (cachedUserGroups) {
-      this.logger.debug(`[gitlab] user: ${user} found in cache, authenticated with groups:`, cachedUserGroups.toString());
+      this.logger.debug(
+        { user: logSafe(user), groups: logSafe(cachedUserGroups.publish.join(', '), GROUPS_LOG_LENGTH) },
+        '[gitlab] user: @{user} found in cache, authenticated with groups: @{groups}'
+      );
       return cb(null, cachedUserGroups.publish);
     }
 
     // Not found in cache, query gitlab
-    this.logger.trace(`[gitlab] user: ${user} not found in cache`);
+    this.logger.trace({ user: logSafe(user) }, '[gitlab] user: @{user} not found in cache');
+
+    const walkKey = AuthCache.generateKeyHash(user, password);
+
+    // GitLab already rejected these credentials within the window.
+    const rejection = this.loginLimiter.rejection(user, walkKey);
+    if (rejection) {
+      this.logger.trace({ user: logSafe(user) }, '[gitlab] user: @{user} credentials already rejected by gitlab');
+      return cb(errorUtils.getUnauthorized(rejection));
+    }
+    if (this.loginLimiter.isBlocked(user)) {
+      this.logger.trace({ user: logSafe(user) }, '[gitlab] user: @{user} blocked after too many failed logins');
+      return cb(errorUtils.getCode(429, 'too many failed logins, try again later'));
+    }
 
     // A burst of npm requests arrives faster than one walk completes, so join
     // an already running walk for the same credentials instead of starting
     // another. Without this the cache never gets the chance to help.
-    const walkKey = AuthCache.generateKeyHash(user, password);
     let walk = this.inflightWalks.get(walkKey);
 
     if (walk) {
-      this.logger.trace(`[gitlab] user: ${user} joining gitlab query already in flight`);
+      this.logger.trace({ user: logSafe(user) }, '[gitlab] user: @{user} joining gitlab query already in flight');
     } else {
-      walk = this._queryUserGroups(user, password);
+      walk = this._queryUserGroups(user, password, walkKey);
       this.inflightWalks.set(walkKey, walk);
 
       // Release the slot on success and on failure alike, so a rejected walk
@@ -123,146 +222,169 @@ export default class VerdaccioGitLab implements IPluginAuth<VerdaccioGitlabConfi
   // Resolves to the groups the user may publish to, or rejects with the
   // verdaccio error to hand back. Split out of authenticate() so that a single
   // walk can be shared by concurrent logins.
-  private _queryUserGroups(user: string, password: string): Promise<string[]> {
-    const GitlabAPI = new Gitlab({
-      url: this.config.url,
-      token: password,
-    });
+  // Counts a login GitLab definitely rejected, as opposed to GitLab failing.
+  private _recordRejectedLogin(user: string, credentialHash: string, message: string): void {
+    if (this.loginLimiter.recordFailure(user, credentialHash, message)) {
+      this.logger.warn(
+        { user: logSafe(user), max: FailedLoginLimiter.DEFAULT_MAX_FAILURES, window: FailedLoginLimiter.DEFAULT_WINDOW_SECONDS },
+        '[gitlab] user: @{user} blocked after @{max} failed logins, for up to @{window} seconds'
+      );
+    }
+  }
 
-    return GitlabAPI.Users.current().then(
+  private _queryUserGroups(user: string, password: string, credentialHash: string): Promise<string[]> {
+    // Only the three resources the walk needs: the client's all-in-one Gitlab
+    // class builds every resource it knows on each login.
+    const clientOptions = { host: this.gitlabHost, token: password, requesterFn };
+    const users = new Users(clientOptions);
+    const groups = new Groups(clientOptions);
+    const projects = new Projects(clientOptions);
+
+    return users.showCurrentUser().then(
       response => {
         if (user.toLowerCase() !== response.username.toLowerCase()) {
-          return Promise.reject(getUnauthorized('wrong gitlab username'));
+          this.logger.warn(
+            { user: logSafe(user), gitlabUser: logSafe(response.username) },
+            '[gitlab] login as user: @{user} rejected, the token belongs to gitlab user: @{gitlabUser}'
+          );
+          this._recordRejectedLogin(user, credentialHash, WRONG_USERNAME);
+          return Promise.reject(errorUtils.getUnauthorized(WRONG_USERNAME));
         }
 
         const publishLevelId = ACCESS_LEVEL_MAPPING[this.publishLevel];
+        const accessLevelId = ACCESS_LEVEL_MAPPING[this.accessLevel];
 
-        // Set the groups of an authenticated user, in normal mode:
-        // - for access, depending on the package settings in verdaccio
-        // - for publish, the logged in user id and all the groups they can reach as configured with access level `$auth.gitlab.publish`
-        const gitlabPublishQueryParams = { min_access_level: publishLevelId, per_page: GITLAB_PAGE_SIZE };
+        // The groups and projects the user reaches with a role, as package
+        // name candidates. Top-level groups only, filtered by GitLab itself,
+        // and projects in GitLab's lean "simple" form: the walk only needs
+        // paths, and pages of full project objects are slow to build and big.
+        const reachable = (minAccessLevel: number): Promise<string[]> => {
+          const params = { minAccessLevel, perPage: GITLAB_PAGE_SIZE };
+          this.logger.trace({ params: JSON.stringify(params) }, '[gitlab] querying gitlab groups and projects with params: @{params}');
+          return Promise.all([
+            groups
+              .all<false, 'offset'>({ ...params, topLevelOnly: true })
+              .then(groupList => groupList.filter(group => group.path === group.full_path).map(group => group.path)),
+            projects
+              .all<false, 'offset'>({ ...params, simple: true })
+              .then(projectList => projectList.map(project => project.path_with_namespace)),
+          ]).then(([groupPaths, projectPaths]) => [...groupPaths, ...projectPaths]);
+        };
 
-        this.logger.trace('[gitlab] querying gitlab user groups with params:', gitlabPublishQueryParams.toString());
+        // Both roles are queried in parallel, so a login takes no longer than
+        // before; with the same role for both, one query serves both.
+        const publishPromise = reachable(publishLevelId);
+        const accessPromise = accessLevelId === publishLevelId ? publishPromise : reachable(accessLevelId);
 
-        const groupsPromise = GitlabAPI.Groups.all(gitlabPublishQueryParams).then(groups => {
-          return groups.filter(group => group.path === group.full_path).map(group => group.path);
-        });
-
-        const projectsPromise = GitlabAPI.Projects.all(gitlabPublishQueryParams).then(projects => {
-          return projects.map(project => project.path_with_namespace);
-        });
-
-        return Promise.all([groupsPromise, projectsPromise]).then(
-          ([groups, projectGroups]) => {
-            const realGroups = [user, ...groups, ...projectGroups];
+        return Promise.all([publishPromise, accessPromise]).then(
+          ([publishPaths, accessPaths]) => {
+            // Publish paths plainly, paths the user may only read marked.
+            // Each path appears once, which keeps verdaccio's tokens small.
+            const publishable = new Set([user, ...publishPaths]);
+            const readOnly = [...new Set(accessPaths)].filter(path => !publishable.has(path));
+            const realGroups = [...publishable, ...readOnly.map(path => READ_ONLY_PREFIX + path)];
             this._setCachedUserGroups(user, password, { publish: realGroups });
+            this.loginLimiter.recordSuccess(user);
 
-            this.logger.info(`[gitlab] user: ${user} successfully authenticated`);
-            this.logger.debug(`[gitlab] user: ${user}, with groups:`, realGroups.toString());
+            this.logger.info({ user: logSafe(user) }, '[gitlab] user: @{user} successfully authenticated');
+            this.logger.debug(
+              { user: logSafe(user), groups: logSafe(realGroups.join(', '), GROUPS_LOG_LENGTH) },
+              '[gitlab] user: @{user}, with groups: @{groups}'
+            );
 
             return realGroups;
           },
           error => {
-            this.logger.error(`[gitlab] user: ${user} error querying gitlab: ${error}`);
-            return Promise.reject(getUnauthorized('error authenticating user'));
+            this.logger.error(
+              { user: logSafe(user), error: logSafe(error?.message) },
+              '[gitlab] user: @{user} error querying gitlab: @{error}'
+            );
+            return Promise.reject(errorUtils.getUnauthorized(AUTHENTICATION_ERROR));
           }
         );
       },
       error => {
-        this.logger.error(`[gitlab] user: ${user} error querying gitlab user data: ${error.message || {}}`);
-        return Promise.reject(getUnauthorized('error authenticating user'));
+        if (TOKEN_REJECTED_STATUSES.includes(gitlabStatus(error) as number)) {
+          this.logger.warn(
+            { user: logSafe(user), status: gitlabStatus(error) },
+            '[gitlab] login as user: @{user} rejected, gitlab answered @{status} for the token'
+          );
+          this._recordRejectedLogin(user, credentialHash, AUTHENTICATION_ERROR);
+        } else {
+          this.logger.error(
+            { user: logSafe(user), error: logSafe(error?.message) },
+            '[gitlab] user: @{user} error querying gitlab user data: @{error}'
+          );
+        }
+        return Promise.reject(errorUtils.getUnauthorized(AUTHENTICATION_ERROR));
       }
     );
   }
 
   public adduser(user: string, password: string, cb: Callback) {
-    this.logger.trace(`[gitlab] adduser called for user: ${user}`);
+    this.logger.trace({ user: logSafe(user) }, '[gitlab] adduser called for user: @{user}');
     return cb(null, true);
   }
 
   public changePassword(user: string, password: string, newPassword: string, cb: Callback) {
-    this.logger.trace(`[gitlab] changePassword called for user: ${user}`);
-    return cb(getInternalError('You are using verdaccio-gitlab integration. Please change your password in gitlab'));
+    this.logger.trace({ user: logSafe(user) }, '[gitlab] changePassword called for user: @{user}');
+    return cb(errorUtils.getInternalError('You are using verdaccio-gitlab integration. Please change your password in gitlab'));
   }
 
   public allow_access(user: RemoteUser, _package: VerdaccioGitlabPackageAccess & PackageAccess, cb: Callback) {
     if (!_package.gitlab) return cb(null, false);
 
-    const packageAccess = _package.access && _package.access.length > 0 ? _package.access : DEFAULT_ALLOW_ACCESS_LEVEL;
+    // A section without access is not public: verdaccio reads it as nobody.
+    const packageAccess = _package.access || [];
+    const packageName = _package.name as string;
 
-    if (user.name !== undefined) {
-      // successfully authenticated
-      this.logger.debug(`[gitlab] allow user: ${user.name} authenticated access to package: ${_package.name}`);
+    if (BUILTIN_ACCESS_LEVEL_ANONYMOUS.some(level => packageAccess.includes(level))) {
+      this.logger.debug({ pkg: logSafe(packageName) }, '[gitlab] allow public access to package: @{pkg}');
       return cb(null, true);
-    } else {
-      // unauthenticated
-      if (BUILTIN_ACCESS_LEVEL_ANONYMOUS.some(level => packageAccess.includes(level))) {
-        this.logger.debug(`[gitlab] allow anonymous access to package: ${_package.name}`);
-        return cb(null, true);
-      } else {
-        this.logger.debug(`[gitlab] deny access to package: ${_package.name}`);
-        return cb(getUnauthorized('access denied, user not authenticated and anonymous access disabled'));
-      }
     }
+
+    if (user.name === undefined) {
+      this.logger.info({ pkg: logSafe(packageName) }, '[gitlab] deny anonymous access to package: @{pkg}');
+      return cb(errorUtils.getUnauthorized('access denied, user not authenticated and anonymous access disabled'));
+    }
+
+    const readable = new Set(user.real_groups.map(group => (group.startsWith(READ_ONLY_PREFIX) ? group.slice(READ_ONLY_PREFIX.length) : group)));
+    if (packageCandidates(packageName).some(candidate => readable.has(candidate))) {
+      this.logger.debug(
+        { user: logSafe(user.name), pkg: logSafe(packageName) },
+        '[gitlab] allow user: @{user} access to package: @{pkg}'
+      );
+      return cb(null, true);
+    }
+
+    this.logger.warn(
+      { user: logSafe(user.name), pkg: logSafe(packageName) },
+      '[gitlab] user: @{user} denied access to package: @{pkg}'
+    );
+    return cb(errorUtils.getForbidden(`must have required permissions: ${this.accessLevel} at ${missingPermission(packageName)}`));
   }
 
   public allow_publish(user: RemoteUser, _package: VerdaccioGitlabPackageAccess & PackageAccess, cb: Callback) {
     if (!_package.gitlab) return cb(null, false);
 
-    const packageScopePermit = false;
-    let packagePermit = false;
-    // Only allow to publish packages when:
-    //  - the package has exactly the same name as one of the user groups, or
-    //  - the package scope is the same as one of the user groups
-    for (const real_group of user.real_groups) {
-      // jscs:ignore requireCamelCaseOrUpperCaseIdentifiers
-      this.logger.trace(
-        `[gitlab] publish: checking group: ${real_group} for user: ${user.name || ''} and package: ${_package.name}`
-      );
+    const packageName = _package.name as string;
+    // Only plain entries carry the publish role; marked ones are read-only.
+    const publishable = user.real_groups.filter(group => !group.startsWith(READ_ONLY_PREFIX));
+    const match = packageCandidates(packageName).find(candidate => publishable.includes(candidate));
 
-      if (this._matchGroupWithPackage(real_group, _package.name as string)) {
-        packagePermit = true;
-        break;
-      }
-    }
-
-    if (packagePermit || packageScopePermit) {
-      const perm = packagePermit ? 'package-name' : 'package-scope';
+    if (match !== undefined) {
       this.logger.debug(
-        `[gitlab] user: ${user.name || ''} allowed to publish package: ${_package.name} based on ${perm}`
+        { user: logSafe(user.name || ''), pkg: logSafe(packageName), group: logSafe(match) },
+        '[gitlab] user: @{user} allowed to publish package: @{pkg} based on group: @{group}'
       );
       return cb(null, true);
-    } else {
-      this.logger.debug(`[gitlab] user: ${user.name || ''} denied from publishing package: ${_package.name}`);
-      // @ts-ignore
-      const missingPerm = _package.name.indexOf('@') === 0 ? 'package-scope' : 'package-name';
-      return cb(getForbidden(`must have required permissions: ${this.publishLevel || ''} at ${missingPerm}`));
-    }
-  }
-
-  private _matchGroupWithPackage(real_group: string, package_name: string): boolean {
-    if (real_group === package_name) {
-      return true;
     }
 
-    if (package_name.indexOf('@') === 0) {
-      const split_real_group = real_group.split('/');
-      const split_package_name = package_name.slice(1).split('/');
-
-      if (split_real_group.length > split_package_name.length) {
-        return false;
-      }
-
-      for (let i = 0; i < split_real_group.length; i += 1) {
-        if (split_real_group[i] !== split_package_name[i]) {
-          return false;
-        }
-      }
-
-      return true;
-    }
-
-    return false;
+    this.logger.warn(
+      { user: logSafe(user.name || ''), pkg: logSafe(packageName) },
+      '[gitlab] user: @{user} denied from publishing package: @{pkg}'
+    );
+    return cb(errorUtils.getForbidden(`must have required permissions: ${this.publishLevel || ''} at ${missingPermission(packageName)}`));
   }
 
   private _getCachedUserGroups(username: string, password: string): UserDataGroups | null {
@@ -277,7 +399,7 @@ export default class VerdaccioGitLab implements IPluginAuth<VerdaccioGitlabConfi
     if (!this.authCache) {
       return false;
     }
-    this.logger.debug(`[gitlab] saving data in cache for user: ${username}`);
+    this.logger.debug({ user: logSafe(username) }, '[gitlab] saving data in cache for user: @{user}');
     return this.authCache.storeUser(username, password, new UserData(username, groups));
   }
 }
