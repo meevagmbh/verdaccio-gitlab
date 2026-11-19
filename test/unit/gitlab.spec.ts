@@ -15,7 +15,7 @@ describe('Gitlab Auth Plugin Unit Tests', () => {
     expect(verdaccioGitlab).toBeDefined();
   });
 
-  test('should authenticate a user', done => {
+  test('should authenticate a user', (done) => {
     const verdaccioGitlab: VerdaccioGitlab = new VerdaccioGitlab(config.verdaccioGitlabConfig, config.options);
 
     const cb: Callback = (err, data) => {
@@ -29,7 +29,7 @@ describe('Gitlab Auth Plugin Unit Tests', () => {
     verdaccioGitlab.authenticate(config.user, config.pass, cb);
   });
 
-  test('should fail authentication with wrong pass', done => {
+  test('should fail authentication with wrong pass', (done) => {
     const verdaccioGitlab: VerdaccioGitlab = new VerdaccioGitlab(config.verdaccioGitlabConfig, config.options);
     const wrongPass: string = config.pass + '_wrong';
 
@@ -42,7 +42,7 @@ describe('Gitlab Auth Plugin Unit Tests', () => {
     verdaccioGitlab.authenticate(config.user, wrongPass, cb);
   });
 
-  test('should fail authentication with non-existing user', done => {
+  test('should fail authentication with non-existing user', (done) => {
     const verdaccioGitlab: VerdaccioGitlab = new VerdaccioGitlab(config.verdaccioGitlabConfig, config.options);
     const wrongUser: string = config.user + '_wrong';
 
@@ -55,7 +55,7 @@ describe('Gitlab Auth Plugin Unit Tests', () => {
     verdaccioGitlab.authenticate(wrongUser, config.pass, cb);
   });
 
-  test('should allow access to package based on user group', done => {
+  test('should allow access to package based on user group', (done) => {
     const verdaccioGitlab: VerdaccioGitlab = new VerdaccioGitlab(config.verdaccioGitlabConfig, config.options);
     const _package: VerdaccioGitlabPackageAccess = {
       name: '@myGroup/myPackage',
@@ -75,7 +75,7 @@ describe('Gitlab Auth Plugin Unit Tests', () => {
     verdaccioGitlab.allow_access(config.remoteUser, _package, cb);
   });
 
-  test('should allow access to package based on user project', done => {
+  test('should allow access to package based on user project', (done) => {
     const verdaccioGitlab: VerdaccioGitlab = new VerdaccioGitlab(config.verdaccioGitlabConfig, config.options);
     const _package: VerdaccioGitlabPackageAccess = {
       name: '@anotherGroup/myProject',
@@ -95,7 +95,7 @@ describe('Gitlab Auth Plugin Unit Tests', () => {
     verdaccioGitlab.allow_access(config.remoteUser, _package, cb);
   });
 
-  test('should allow access to package based on user name', done => {
+  test('should allow access to package based on user name', (done) => {
     const verdaccioGitlab: VerdaccioGitlab = new VerdaccioGitlab(config.verdaccioGitlabConfig, config.options);
     const _package: VerdaccioGitlabPackageAccess = {
       name: config.user,
@@ -115,7 +115,7 @@ describe('Gitlab Auth Plugin Unit Tests', () => {
     verdaccioGitlab.allow_access(config.remoteUser, _package, cb);
   });
 
-  test('should allow access to own package when the section has no access level', done => {
+  test('should allow access to own package when the section has no access level', (done) => {
     const verdaccioGitlab: VerdaccioGitlab = new VerdaccioGitlab(config.verdaccioGitlabConfig, config.options);
     const _package: VerdaccioGitlabPackageAccess = {
       name: config.user,
@@ -135,7 +135,7 @@ describe('Gitlab Auth Plugin Unit Tests', () => {
     verdaccioGitlab.allow_access(config.remoteUser, _package, cb);
   });
 
-  test('should deny access to package based on unauthenticated', done => {
+  test('should deny access to package based on unauthenticated', (done) => {
     const verdaccioGitlab: VerdaccioGitlab = new VerdaccioGitlab(config.verdaccioGitlabConfig, config.options);
     const unauthenticatedUser: RemoteUser = {
       real_groups: [],
@@ -159,7 +159,7 @@ describe('Gitlab Auth Plugin Unit Tests', () => {
     verdaccioGitlab.allow_access(unauthenticatedUser, _package, cb);
   });
 
-  test('should allow publish of package based on user group', done => {
+  test('should allow publish of package based on user group', (done) => {
     const verdaccioGitlab: VerdaccioGitlab = new VerdaccioGitlab(config.verdaccioGitlabConfig, config.options);
     const _package: VerdaccioGitlabPackageAccess = {
       name: '@myGroup/myPackage',
@@ -178,7 +178,7 @@ describe('Gitlab Auth Plugin Unit Tests', () => {
     verdaccioGitlab.allow_publish(config.remoteUser, _package, cb);
   });
 
-  test('should allow publish of package based on user project', done => {
+  test('should allow publish of package based on user project', (done) => {
     const verdaccioGitlab: VerdaccioGitlab = new VerdaccioGitlab(config.verdaccioGitlabConfig, config.options);
     const _package: VerdaccioGitlabPackageAccess = {
       name: '@anotherGroup/myProject',
@@ -197,7 +197,7 @@ describe('Gitlab Auth Plugin Unit Tests', () => {
     verdaccioGitlab.allow_publish(config.remoteUser, _package, cb);
   });
 
-  test('should allow publish of package based on user name', done => {
+  test('should allow publish of package based on user name', (done) => {
     const verdaccioGitlab: VerdaccioGitlab = new VerdaccioGitlab(config.verdaccioGitlabConfig, config.options);
     const _package: VerdaccioGitlabPackageAccess = {
       name: config.user,
@@ -216,7 +216,7 @@ describe('Gitlab Auth Plugin Unit Tests', () => {
     verdaccioGitlab.allow_publish(config.remoteUser, _package, cb);
   });
 
-  test('should deny publish of package based on unauthenticated', done => {
+  test('should deny publish of package based on unauthenticated', (done) => {
     const verdaccioGitlab: VerdaccioGitlab = new VerdaccioGitlab(config.verdaccioGitlabConfig, config.options);
     const unauthenticatedUser: RemoteUser = {
       real_groups: [],
@@ -240,7 +240,7 @@ describe('Gitlab Auth Plugin Unit Tests', () => {
     verdaccioGitlab.allow_publish(unauthenticatedUser, _package, cb);
   });
 
-  test('should deny publish of package based on group', done => {
+  test('should deny publish of package based on group', (done) => {
     const verdaccioGitlab: VerdaccioGitlab = new VerdaccioGitlab(config.verdaccioGitlabConfig, config.options);
     const _package: VerdaccioGitlabPackageAccess = {
       name: '@anotherGroup/myPackage',
@@ -259,7 +259,7 @@ describe('Gitlab Auth Plugin Unit Tests', () => {
     verdaccioGitlab.allow_publish(config.remoteUser, _package, cb);
   });
 
-  test('should deny publish of package based on user', done => {
+  test('should deny publish of package based on user', (done) => {
     const verdaccioGitlab: VerdaccioGitlab = new VerdaccioGitlab(config.verdaccioGitlabConfig, config.options);
     const _package: VerdaccioGitlabPackageAccess = {
       name: 'anotherUser',

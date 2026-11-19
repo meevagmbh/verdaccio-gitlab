@@ -15,21 +15,21 @@ const FORGED = 'evil\n info --- [gitlab] user: root successfully authenticated @
 const LEVELS = ['error', 'warn', 'info', 'debug', 'trace'] as const;
 
 function loggedCalls(): any[][] {
-  return LEVELS.flatMap(level => (logger[level] as jest.Mock).mock.calls);
+  return LEVELS.flatMap((level) => (logger[level] as jest.Mock).mock.calls);
 }
 
 function templates(): string[] {
-  return loggedCalls().map(args => (typeof args[0] === 'string' ? args[0] : args[1]));
+  return loggedCalls().map((args) => (typeof args[0] === 'string' ? args[0] : args[1]));
 }
 
 function fields(): Record<string, unknown>[] {
   return loggedCalls()
-    .filter(args => typeof args[0] === 'object')
-    .map(args => args[0]);
+    .filter((args) => typeof args[0] === 'object')
+    .map((args) => args[0]);
 }
 
 function callbackResult(invoke: (cb: (err: any, data?: any) => void) => void): Promise<void> {
-  return new Promise(resolve => invoke(() => resolve()));
+  return new Promise((resolve) => invoke(() => resolve()));
 }
 
 describe('logSafe', () => {
@@ -59,19 +59,19 @@ describe('Gitlab Auth Plugin logging of request data', () => {
   const anonymous: RemoteUser = { real_groups: [], groups: [], name: undefined };
 
   const paths: [string, () => Promise<void>][] = [
-    ['authenticate', () => callbackResult(cb => plugin.authenticate(FORGED, 'wrong', cb))],
-    ['adduser', () => callbackResult(cb => plugin.adduser(FORGED, 'wrong', cb))],
-    ['changePassword', () => callbackResult(cb => plugin.changePassword(FORGED, 'wrong', 'new', cb))],
-    ['allow_access', () => callbackResult(cb => plugin.allow_access(user, pkg, cb))],
-    ['allow_access anonymous', () => callbackResult(cb => plugin.allow_access(anonymous, pkg, cb))],
-    ['allow_publish', () => callbackResult(cb => plugin.allow_publish(user, pkg, cb))],
+    ['authenticate', () => callbackResult((cb) => plugin.authenticate(FORGED, 'wrong', cb))],
+    ['adduser', () => callbackResult((cb) => plugin.adduser(FORGED, 'wrong', cb))],
+    ['changePassword', () => callbackResult((cb) => plugin.changePassword(FORGED, 'wrong', 'new', cb))],
+    ['allow_access', () => callbackResult((cb) => plugin.allow_access(user, pkg, cb))],
+    ['allow_access anonymous', () => callbackResult((cb) => plugin.allow_access(anonymous, pkg, cb))],
+    ['allow_publish', () => callbackResult((cb) => plugin.allow_publish(user, pkg, cb))],
   ];
 
   test.each(paths)('%s keeps request data out of the message template', async (_name, run) => {
     await run();
 
     expect(templates().length).toBeGreaterThan(0);
-    templates().forEach(template => {
+    templates().forEach((template) => {
       expect(template).not.toContain('evil');
     });
   });
@@ -79,17 +79,17 @@ describe('Gitlab Auth Plugin logging of request data', () => {
   test.each(paths)('%s logs request data without line breaks', async (_name, run) => {
     await run();
 
-    const values = fields().flatMap(field => Object.values(field));
-    expect(values.some(value => String(value).includes('evil'))).toBe(true);
-    values.forEach(value => {
+    const values = fields().flatMap((field) => Object.values(field));
+    expect(values.some((value) => String(value).includes('evil'))).toBe(true);
+    values.forEach((value) => {
       expect(String(value)).not.toMatch(/[\r\n]/);
     });
   });
 
   test('a failed gitlab query never logs the password', async () => {
-    await callbackResult(cb => plugin.authenticate(config.user, 'wrong-secret-token', cb));
+    await callbackResult((cb) => plugin.authenticate(config.user, 'wrong-secret-token', cb));
 
-    loggedCalls().forEach(args => {
+    loggedCalls().forEach((args) => {
       expect(JSON.stringify(args)).not.toContain('wrong-secret-token');
     });
   });

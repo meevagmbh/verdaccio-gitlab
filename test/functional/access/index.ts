@@ -12,7 +12,7 @@ export default (server: any, _gitlab: any) => {
       return server
         .getPackage(PACKAGE.EXISTING_NAME)
         .status(HTTP_STATUS.OK)
-        .then(body => {
+        .then((body) => {
           expect(body).toHaveProperty('name');
           expect(body.name).toBe(PACKAGE.EXISTING_NAME);
         });
@@ -27,7 +27,7 @@ export default (server: any, _gitlab: any) => {
       return server
         .getPackage(PACKAGE.FOREIGN_SCOPED_NAME)
         .status(HTTP_STATUS.FORBIDDEN)
-        .then(body => {
+        .then((body) => {
           expect(body.error).toMatch(/permissions/);
         });
     });
@@ -45,7 +45,7 @@ export default (server: any, _gitlab: any) => {
         .getPackage(PACKAGE.NON_EXISTING_NAME)
         .status(HTTP_STATUS.NOT_FOUND)
         .body_error(API_ERROR.NO_PACKAGE)
-        .then(body => {
+        .then((body) => {
           expect(body).toHaveProperty('error');
           expect(body.error).toMatch(/no/);
         });

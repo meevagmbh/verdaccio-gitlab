@@ -10,7 +10,7 @@ export default (server: any, _gitlab: any) => {
         .auth(CREDENTIALS.user, CREDENTIALS.password)
         .status(HTTP_STATUS.CREATED)
         .body_ok(new RegExp(CREDENTIALS.user))
-        .then(body => {
+        .then((body) => {
           expect(body).toHaveProperty('ok');
           expect(body).toHaveProperty('token');
         });
@@ -20,7 +20,7 @@ export default (server: any, _gitlab: any) => {
       return server
         .auth(WRONG_CREDENTIALS.user, CREDENTIALS.password)
         .status(HTTP_STATUS.UNAUTHORIZED)
-        .then(body => {
+        .then((body) => {
           expect(body).toHaveProperty('error');
           expect(body.error).toMatch(/wrong/);
         });
@@ -30,7 +30,7 @@ export default (server: any, _gitlab: any) => {
       return server
         .auth(CREDENTIALS.user, WRONG_CREDENTIALS.password)
         .status(HTTP_STATUS.UNAUTHORIZED)
-        .then(body => {
+        .then((body) => {
           expect(body).toHaveProperty('error');
           expect(body.error).toMatch(/error/);
         });

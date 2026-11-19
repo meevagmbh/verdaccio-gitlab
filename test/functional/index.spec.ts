@@ -18,7 +18,7 @@ describe('Functional Tests verdaccio-gitlab', () => {
   publish(server1, gitlab);
 });
 
-process.on('unhandledRejection', err => {
+process.on('unhandledRejection', (err) => {
   console.error('unhandledRejection', err);
   process.nextTick(() => {
     throw err;

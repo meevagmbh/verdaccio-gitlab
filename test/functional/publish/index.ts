@@ -13,7 +13,7 @@ export default (server: any, _gitlab: any) => {
         return server
           .putPackage(PACKAGE.NAME, fixturePkg(PACKAGE.NAME))
           .status(HTTP_STATUS.FORBIDDEN)
-          .then(body => {
+          .then((body) => {
             expect(body).toHaveProperty('error');
           });
       });
@@ -24,7 +24,7 @@ export default (server: any, _gitlab: any) => {
         .putPackage(PACKAGE.GROUP_NAME, fixturePkg(PACKAGE.GROUP_NAME))
         .status(HTTP_STATUS.CREATED)
         .body_ok(/created new package/)
-        .then(body => {
+        .then((body) => {
           expect(body).toHaveProperty('ok');
           expect(body.ok).toMatch(/created/);
           expect(body).toHaveProperty('success');
@@ -37,7 +37,7 @@ export default (server: any, _gitlab: any) => {
         .putPackage(PACKAGE.SCOPED_GROUP_NAME, fixturePkg(PACKAGE.SCOPED_GROUP_NAME))
         .status(HTTP_STATUS.CREATED)
         .body_ok(/created new package/)
-        .then(body => {
+        .then((body) => {
           expect(body).toHaveProperty('ok');
           expect(body.ok).toMatch(/created/);
           expect(body).toHaveProperty('success');
@@ -50,7 +50,7 @@ export default (server: any, _gitlab: any) => {
         .putPackage(PACKAGE.SCOPED_PROJECT_NAME, fixturePkg(PACKAGE.SCOPED_PROJECT_NAME))
         .status(HTTP_STATUS.CREATED)
         .body_ok(/created new package/)
-        .then(body => {
+        .then((body) => {
           expect(body).toHaveProperty('ok');
           expect(body.ok).toMatch(/created/);
           expect(body).toHaveProperty('success');

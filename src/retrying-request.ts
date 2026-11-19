@@ -39,7 +39,7 @@ export function retryDelays({ retryWindowMs, baseDelayMs }: RetryOptions): numbe
 }
 
 function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function parseBody(response: Response): Promise<any> {
@@ -71,7 +71,7 @@ async function requestError(request: Request, response: Response): Promise<Error
   return new Error(description || `${response.status} ${response.statusText}`, { cause: { description, request, response } });
 }
 
-export function createRetryingRequestHandler(options: RetryOptions = DEFAULT_RETRY_OPTIONS, fetchFn: FetchFn = request => fetch(request)) {
+export function createRetryingRequestHandler(options: RetryOptions = DEFAULT_RETRY_OPTIONS, fetchFn: FetchFn = (request) => fetch(request)) {
   const delays = retryDelays(options);
 
   return async function retryingRequestHandler(endpoint: string, requestOptions: Record<string, any> = {}): Promise<FormattedResponse> {
@@ -87,7 +87,7 @@ export function createRetryingRequestHandler(options: RetryOptions = DEFAULT_RET
 
     for (let attempt = 0; ; attempt += 1) {
       const request = baseRequest.clone();
-      const response = await fetchFn(request).catch(error => {
+      const response = await fetchFn(request).catch((error) => {
         if (error.name === 'TimeoutError' || error.name === 'AbortError') {
           throw new Error('Query timeout was reached', { cause: error });
         }
@@ -99,9 +99,7 @@ export function createRetryingRequestHandler(options: RetryOptions = DEFAULT_RET
       }
       if (response.status >= 300 && response.status < 400) {
         const location = response.headers.get('location') || 'an unknown location';
-        throw new Error(
-          `GitLab answered ${response.status} redirect to ${location}; redirects are not followed, so set auth.gitlab.url to the final address`
-        );
+        throw new Error(`GitLab answered ${response.status} redirect to ${location}; redirects are not followed, so set auth.gitlab.url to the final address`);
       }
       if (!RETRY_STATUSES.includes(response.status)) {
         throw await requestError(request, response);

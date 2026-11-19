@@ -21,7 +21,7 @@ export class PromiseAssert extends Promise<any> implements IRequestPromise {
 
     return injectResponse(
       this,
-      this.then(function(body) {
+      this.then(function (body) {
         try {
           assert.equal(selfData.response.statusCode, expected);
         } catch (err) {
@@ -38,7 +38,7 @@ export class PromiseAssert extends Promise<any> implements IRequestPromise {
 
     return injectResponse(
       this,
-      this.then(function(body) {
+      this.then(function (body) {
         try {
           if (_.isRegExp(expected)) {
             assert(body.ok.match(expected), "'" + body.ok + "' doesn't match " + expected);
@@ -61,7 +61,7 @@ export class PromiseAssert extends Promise<any> implements IRequestPromise {
 
     return injectResponse(
       this,
-      this.then(function(body) {
+      this.then(function (body) {
         try {
           if (_.isRegExp(expected)) {
             assert(body.error.match(expected), body.error + " doesn't match " + expected);
@@ -83,7 +83,7 @@ export class PromiseAssert extends Promise<any> implements IRequestPromise {
 
     return injectResponse(
       this,
-      this.then(function(body) {
+      this.then(function (body) {
         cb(selfData.response);
         return body;
       })
@@ -97,7 +97,7 @@ export class PromiseAssert extends Promise<any> implements IRequestPromise {
 }
 
 function hasHeader(headers: Record<string, any>, name: string): boolean {
-  return Object.keys(headers).some(key => key.toLowerCase() === name);
+  return Object.keys(headers).some((key) => key.toLowerCase() === name);
 }
 
 // Mirrors what the request package did with the options this suite passes:
@@ -138,7 +138,7 @@ function smartRequest(options: any): Promise<any> {
   smartObject[requestData].error = Error();
   Error.captureStackTrace(smartObject[requestData].error, smartRequest);
 
-  const promiseResult: Promise<any> = new PromiseAssert(function(resolve, reject) {
+  const promiseResult: Promise<any> = new PromiseAssert(function (resolve, reject) {
     // Start on the next microtask, so a chained .send(data) can still set the body.
     queueMicrotask(() => {
       performRequest(options, smartObject[requestData]).then(resolve, reject);

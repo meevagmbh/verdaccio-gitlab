@@ -7,7 +7,7 @@ const logger: Logger = {
   child: jest.fn(),
   warn: jest.fn(),
   http: jest.fn(),
-  trace: jest.fn()
+  trace: jest.fn(),
 };
 
 export default logger;

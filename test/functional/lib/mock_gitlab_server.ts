@@ -16,7 +16,7 @@ export default class GitlabServer {
   }
 
   public start(port: number): Promise<any> {
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       this.app.use(bodyParser.json());
       this.app.use(
         bodyParser.urlencoded({

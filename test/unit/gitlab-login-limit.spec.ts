@@ -13,7 +13,7 @@ const calls = (GitbeakerRest as any).__calls;
 const gitlabUser = calls.usersCurrent.getMockImplementation();
 
 function authenticate(plugin: VerdaccioGitlab, user: string, pass: string): Promise<any> {
-  return new Promise(resolve => plugin.authenticate(user, pass, (err: any, groups: any) => resolve(err || groups)));
+  return new Promise((resolve) => plugin.authenticate(user, pass, (err: any, groups: any) => resolve(err || groups)));
 }
 
 async function failDistinct(plugin: VerdaccioGitlab, count: number) {
@@ -60,7 +60,7 @@ describe('Gitlab Auth Plugin failed login limit', () => {
 
     const results = await Promise.all([1, 2, 3].map(() => authenticate(plugin, config.user, 'expired')));
 
-    results.forEach(result => expect(result.status).toBe(401));
+    results.forEach((result) => expect(result.status).toBe(401));
     expect(calls.usersCurrent).not.toHaveBeenCalled();
   });
 

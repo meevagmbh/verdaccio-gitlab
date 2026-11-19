@@ -81,7 +81,7 @@ describe('AuthCache Unit Tests', () => {
 
   // Cached credentials must expire: a token revoked in GitLab would otherwise
   // keep working until verdaccio restarts.
-  test.each([0, -1, Number.NaN])('should fall back to the default ttl and warn for ttl %p', ttl => {
+  test.each([0, -1, Number.NaN])('should fall back to the default ttl and warn for ttl %p', (ttl) => {
     const authCache: AuthCache = new AuthCache(logger, ttl);
 
     expect(authCache.ttl).toBe(AuthCache.DEFAULT_TTL);

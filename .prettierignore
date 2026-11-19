@@ -7,3 +7,5 @@ yarn.lock
 CHANGELOG.md
 # verdaccio storage written by the functional tests
 test/functional/store/test-storage*
+# legacy eslintrc without extension; prettier would rewrite it as invalid JSON
+test/functional/.eslintrc

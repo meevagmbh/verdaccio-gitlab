@@ -168,9 +168,7 @@ export default class Server implements IServerBridge {
   }
 
   public addPackage(name: string) {
-    return this.putPackage(name, getPackage(name))
-      .status(HTTP_STATUS.CREATED)
-      .body_ok(API_MESSAGE.PKG_CREATED);
+    return this.putPackage(name, getPackage(name)).status(HTTP_STATUS.CREATED).body_ok(API_MESSAGE.PKG_CREATED);
   }
 
   public whoami() {
@@ -178,7 +176,7 @@ export default class Server implements IServerBridge {
       uri: '/-/whoami',
     })
       .status(HTTP_STATUS.OK)
-      .then(function(body) {
+      .then(function (body) {
         return body.username;
       });
   }
@@ -188,7 +186,7 @@ export default class Server implements IServerBridge {
       uri: '/-/ping',
     })
       .status(HTTP_STATUS.OK)
-      .then(function(body) {
+      .then(function (body) {
         return body;
       });
   }
