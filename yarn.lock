@@ -6825,18 +6825,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"in-publish@npm:^2.0.0":
-  version: 2.0.0
-  resolution: "in-publish@npm:2.0.0"
-  bin:
-    in-install: in-install.js
-    in-publish: in-publish.js
-    not-in-install: not-in-install.js
-    not-in-publish: not-in-publish.js
-  checksum: 10c0/f530f36fca227bfb9bef3bbb83abee5a27b49ddb3e70721a95015c7cc3bd0db7c866b562303e4286819c8431aa908bb08ecbc818fa42c9728d33a9dcc49dda66
-  languageName: node
-  linkType: hard
-
 "indent-string@npm:^3.0.0":
   version: 3.2.0
   resolution: "indent-string@npm:3.2.0"
@@ -12285,7 +12273,6 @@ __metadata:
     globals: "npm:17.14.0"
     http-status: "npm:^1.4.2"
     husky: "npm:^3.1.0"
-    in-publish: "npm:^2.0.0"
     jest: "npm:30.5.2"
     jest-environment-node: "npm:30.5.2"
     kleur: "npm:3.0.3"

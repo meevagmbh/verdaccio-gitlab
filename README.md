@@ -76,13 +76,13 @@ Restart Verdaccio and authenticate into it with your credentials
 using the Web UI [http://localhost:4873](http://localhost:4873) or via npm CLI:
 
 ```sh
-yarn login --registry http://localhost:4873
+npm login --registry http://localhost:4873
 ```
 
 and publish packages:
 
 ```sh
-yarn publish --registry http://localhost:4873
+npm publish --registry http://localhost:4873
 ```
 
 ## Access Levels
@@ -221,7 +221,8 @@ rule set.
 
 ### Create a Release
 
-Run one of the following command to create a release:
+From a clean working tree, run one of the following commands to create a
+release:
 
 ```sh
 yarn release:major
@@ -229,11 +230,17 @@ yarn release:minor
 yarn release:patch
 ```
 
-finally run
+It updates `CHANGELOG.md`, bumps the version in `package.json`, commits both,
+creates the `vX.Y.Z` tag and pushes the branch and the tag to `origin`.
+
+Finally publish the package to npm:
 
 ```sh
-yarn publish
+yarn npm publish
 ```
+
+`yarn npm publish` (and `yarn pack`) run the `prepack` script, which lints and
+builds `build/` from a clean state before the tarball is created.
 
 ### Functional Tests
 
