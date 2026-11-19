@@ -26,6 +26,7 @@ export const PACKAGE = {
   SCOPED_PROJECT_NAME: '@another-group/test-project',
   MEMBER_SCOPED_MISSING_NAME: '@test-group/not-published',
   FOREIGN_SCOPED_NAME: '@foreign-group/some-package',
+  OPEN_SCOPED_NAME: '@open/some-package',
   VERSION: '0.0.1',
 };
 

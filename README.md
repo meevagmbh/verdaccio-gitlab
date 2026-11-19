@@ -56,24 +56,22 @@ uplinks:
     url: https://registry.npmjs.org/
 
 packages:
-  # private packages: readable by members of the matching GitLab group
+  # private packages, one entry per GitLab group: readable with the
+  # `access` role, publishable with the `publish` role on the group
   '@my-group/*':
     access: $authenticated
     publish: $authenticated
     gitlab: true
 
-  # public scoped packages from npmjs
+  # public npm packages: readable by every logged-in GitLab user,
+  # nobody can publish here
   '@*/*':
-    access: $all
-    publish: $maintainer
+    access: $authenticated
     proxy: npmjs
-    gitlab: true
 
   '**':
-    access: $all
-    publish: $maintainer
+    access: $authenticated
     proxy: npmjs
-    gitlab: true
 
 # Log level can be changed to info, http etc. for less verbose output
 log: {type: stdout, format: pretty, level: debug}
@@ -109,8 +107,8 @@ element from the config.
 
 *access* is allowed if:
 
-1. the package section's `access` contains `$all` or `$anonymous` (or is
-   empty): the section is public, and anyone may read it, or
+1. the package section's `access` contains `$all` or `$anonymous`: the
+   section is public, and anyone may read it, even without logging in, or
 2. the user is authenticated and the package name maps to the user's name,
    or to one of the user's GitLab groups or projects, in the same way as for
    *publish* below.
@@ -118,10 +116,17 @@ element from the config.
 For 2., the GitLab user must have at least the role set in
 `auth.gitlab.access` (default `$reporter`) on the group or project. Other
 authenticated users get `403 Forbidden`, anonymous users `401 Unauthorized`.
+A section without `access` is not public.
 
-So keep public upstream packages in sections with `access: $all`, and put
-private packages in sections with `access: $authenticated`, as in the
-configuration sample above.
+For an internal registry, as in the configuration sample above:
+
+- give every GitLab group that publishes packages its own section with
+  `gitlab: true` and `access: $authenticated`, and no `proxy`;
+- leave `gitlab: true` off the sections that proxy public npm packages, and
+  give them `access: $authenticated` and no `publish`: every logged-in
+  GitLab user can read them, nobody can publish to them, and verdaccio
+  itself checks them;
+- use `$all` nowhere, so nothing is readable without logging in.
 
 The plugin hands verdaccio the user's groups and projects as the user's
 groups: those with the publish role by their path, those the user may only

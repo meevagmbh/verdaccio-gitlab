@@ -21,27 +21,25 @@ uplinks:
     url: https://registry.npmjs.org/
 
 packages:
-  # Private packages: only members of the matching GitLab group or project,
-  # with at least the auth.gitlab.access role, can read them. Use one entry
-  # per GitLab group that publishes packages.
+  # Private packages: one entry per GitLab group that publishes packages.
+  # Reading needs at least auth.gitlab.access ($reporter) and publishing at
+  # least auth.gitlab.publish ($maintainer) on the matching group or project.
+  # No proxy, so a same-named public package cannot shadow them.
   '@my-group/*':
     access: $authenticated
     publish: $authenticated
     gitlab: true
 
-  # Public packages from npmjs: $all keeps them readable for everyone.
-  # Publishing is still checked against GitLab.
+  # Public packages from npmjs: readable by every logged-in GitLab user,
+  # regardless of group membership. No publish entry, so nobody can publish
+  # here and a private package cannot end up in a public section.
   '@*/*':
-    access: $all
-    publish: $authenticated
+    access: $authenticated
     proxy: npmjs
-    gitlab: true
 
   '**':
-    access: $all
-    publish: $authenticated
+    access: $authenticated
     proxy: npmjs
-    gitlab: true
 
 # verdaccio 5+ takes a single `log` object; the `logs` list is deprecated.
 log: { type: stdout, format: pretty, level: info }

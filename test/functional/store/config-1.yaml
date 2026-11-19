@@ -40,6 +40,11 @@ packages:
     publish: $authenticated
     gitlab: true
 
+  # Like a section proxying public npm packages: any logged-in user may
+  # read, nobody may publish, and verdaccio checks it without the plugin.
+  '@open/*':
+    access: $authenticated
+
   '@*/*':
     access: $all
     publish: $all

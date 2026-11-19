@@ -1,5 +1,6 @@
 import { CREDENTIALS, PACKAGE } from '../config.functional';
 import { API_ERROR, HTTP_STATUS } from '../../lib/constants';
+import fixturePkg from '../fixtures/package';
 
 export default (server: any, _gitlab: any) => {
   describe('package access tests', () => {
@@ -29,6 +30,14 @@ export default (server: any, _gitlab: any) => {
         .then(body => {
           expect(body.error).toMatch(/permissions/);
         });
+    });
+
+    test('should allow any logged-in user to read a section without gitlab: true', () => {
+      return server.getPackage(PACKAGE.OPEN_SCOPED_NAME).status(HTTP_STATUS.NOT_FOUND);
+    });
+
+    test('should deny publishing to a section without publish', () => {
+      return server.putPackage(PACKAGE.OPEN_SCOPED_NAME, fixturePkg(PACKAGE.OPEN_SCOPED_NAME)).status(HTTP_STATUS.FORBIDDEN);
     });
 
     test('should fail with non-existing package', () => {
