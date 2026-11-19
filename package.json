@@ -81,6 +81,7 @@
     "lodash": "^4.18.1",
     "markdownlint-cli": "^0.50.0",
     "oxlint": "1.93.0",
+    "oxlint-tsgolint": "7.0.2006",
     "pinst": "3.0.0",
     "prettier": "3.10.1",
     "rimraf": "^6.1.4",

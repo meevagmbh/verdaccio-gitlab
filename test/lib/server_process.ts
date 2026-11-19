@@ -27,7 +27,8 @@ export default class VerdaccioProcess implements IServerProcess {
   public init(verdaccioPath = '../../bin/verdaccio'): Promise<any> {
     return new Promise((resolve, reject) => {
       if (this.cleanStore) {
-        rimraf(this.config.storagePath)
+        // The chain settles the outer promise through resolve and reject.
+        void rimraf(this.config.storagePath)
           .catch(reject)
           .then(() => this._start(verdaccioPath, resolve, reject));
       } else {
