@@ -12,6 +12,7 @@ auth:
     allowInsecureHttp: true
     authCache:
       enabled: false
+    access: $reporter
     publish: $maintainer
 
 uplinks:
@@ -31,6 +32,11 @@ packages:
 
   # Private packages: readable by members of the matching group or project.
   '@test-group/*':
+    access: $authenticated
+    publish: $authenticated
+    gitlab: true
+
+  '@read-group/*':
     access: $authenticated
     publish: $authenticated
     gitlab: true
