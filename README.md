@@ -18,8 +18,6 @@ the following:
 - user authenticates with Personal Access Token
 - access & publish packages depending on user rights in gitlab
 
-> This is experimental!
-
 ## Use it
 
 You need node version 24.x (LTS, codename **Krypton**), the version the
@@ -270,13 +268,18 @@ a user cannot read or publish a package.
 
 ## Docker
 
+`docker-compose.yml` starts a local demo with a GitLab and a verdaccio that
+uses this plugin. It is not meant for production.
+
 ```sh
 git clone https://github.com/meevagmbh/verdaccio-gitlab.git
 cd verdaccio-gitlab
-docker-compose up --build -d
+export GITLAB_ROOT_PASSWORD='<a strong password>'
+docker compose up --build -d
 ```
 
-- login with user `root` and password `verdaccio` on Gitlab via [http://localhost:50080](http://localhost:50080)
+- login with user `root` and the password you set on GitLab via [http://localhost:50080](http://localhost:50080)
+  (GitLab takes a few minutes to start)
 - create a Personal Access Token
 - login to the npm registry [http://localhost:4873](http://localhost:4873) via browser
 - publish your packages via command line
@@ -286,7 +289,7 @@ that is internally available under `/verdaccio/conf/config.yaml`. In order
 to overwrite this configuration you can provide your own file and mount it
 on docker startup with the `--volume` option, or equivalent mechanism
 (e.g. ConfigMaps on Kubernetes / OpenShift with the
-[helm chart](https://github.com/helm/charts/tree/master/stable/verdaccio)).
+[verdaccio helm chart](https://github.com/verdaccio/charts)).
 
 ## Development
 
