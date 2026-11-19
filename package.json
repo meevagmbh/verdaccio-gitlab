@@ -61,11 +61,11 @@
     "lru-cache": "11.5.3"
   },
   "devDependencies": {
-    "@babel/cli": "7.29.7",
-    "@babel/core": "7.29.13",
-    "@babel/preset-env": "7.29.14",
-    "@babel/preset-typescript": "7.29.7",
-    "@babel/register": "7.29.13",
+    "@babel/cli": "8.1.0",
+    "@babel/core": "8.1.2",
+    "@babel/preset-env": "8.0.7",
+    "@babel/preset-typescript": "8.0.7",
+    "@babel/register": "8.1.2",
     "@commitlint/cli": "21.2.4",
     "@commitlint/config-conventional": "21.2.4",
     "@eslint/js": "10.0.1",
@@ -73,6 +73,7 @@
     "@types/lodash": "^4.17.27",
     "@types/node": "24.19.2",
     "@verdaccio/types": "13.1.0",
+    "babel-jest": "30.5.2",
     "body-parser": "^1.20.9",
     "chalk": "4.1.2",
     "conventional-changelog": "8.1.3",
@@ -101,19 +102,20 @@
     ]
   },
   "babel": {
+    "targets": {
+      "node": "24"
+    },
     "presets": [
       [
         "@babel/preset-env",
         {
-          "targets": {
-            "node": "24"
-          }
+          "modules": "commonjs"
         }
       ],
       [
         "@babel/preset-typescript",
         {
-          "allowDeclareFields": true
+          "onlyRemoveTypeImports": false
         }
       ]
     ]
