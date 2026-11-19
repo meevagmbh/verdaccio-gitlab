@@ -8,6 +8,8 @@ listen:
 auth:
   gitlab:
     url: http://gitlab
+    # The compose network reaches GitLab over plain http only.
+    allowInsecureHttp: true
     authCache:
       enabled: true
       ttl: 300

@@ -157,6 +157,7 @@ The full set of configuration options is:
 auth:
   gitlab:
     url: <url>
+    allowInsecureHttp: <boolean>
     authCache:
       enabled: <boolean>
       ttl: <integer>
@@ -166,7 +167,8 @@ auth:
 <!-- markdownlint-disable MD013 -->
 | Option | Default | Type | Description |
 | ------ | ------- | ---- | ----------- |
-| `url` | `<empty>` | url | mandatory, the url of the gitlab server |
+| `url` | `<empty>` | url | mandatory, the url of the gitlab server; must use `https` |
+| `allowInsecureHttp` | `false` | boolean | accept an `http` url; users' GitLab tokens then cross the network unencrypted, so only use it for a GitLab on the same host or a trusted network |
 | `authCache: enabled` | `true` | boolean | activate in-memory authentication cache |
 | `authCache: ttl` | `300` | integer | time-to-live of entries in the authentication cache, in seconds; must be positive |
 | `publish` | `$maintainer` | [`$guest`, `$reporter`, `$developer`, `$maintainer`, `$owner`] | group minimum access level of the logged in user required for npm publish operations |

@@ -9,6 +9,7 @@ web:
 auth:
   gitlab:
     url: http://localhost:50080/
+    allowInsecureHttp: true
     authCache:
       enabled: false
     publish: $maintainer

@@ -15,6 +15,9 @@ export type VerdaccioGitlabAccessLevel = '$guest' | '$reporter' | '$developer' |
 
 export type VerdaccioGitlabConfig = {
   url: string;
+  // Allows an http:// url. Users' GitLab tokens then cross the network in
+  // clear text, so this is meant for a GitLab on the same host or network.
+  allowInsecureHttp?: boolean;
   authCache?: {
     enabled?: boolean;
     ttl?: number;
@@ -74,7 +77,7 @@ export default class VerdaccioGitLab
     this.logger = options.logger;
     this.logger.info(`[gitlab] url: ${this.config.url}`);
     if (typeof this.config.url === 'string') {
-      this.gitlabHost = this.config.url.replace(/\/+$/, '');
+      this.gitlabHost = this._checkedUrl(this.config.url).replace(/\/+$/, '');
     }
 
     if ((this.config.authCache || {}).enabled === false) {
@@ -94,6 +97,28 @@ export default class VerdaccioGitLab
       throw Error(`[gitlab] invalid publish access level configuration: ${this.publishLevel}`);
     }
     this.logger.info(`[gitlab] publish control level: ${this.publishLevel}`);
+  }
+
+  // Every user's GitLab token goes to this url, so it has to use TLS unless
+  // the operator explicitly accepts plain http.
+  private _checkedUrl(url: string): string {
+    let protocol: string;
+    try {
+      protocol = new URL(url).protocol;
+    } catch {
+      throw Error(`[gitlab] invalid auth.gitlab.url: ${url}`);
+    }
+    if (protocol === 'https:') {
+      return url;
+    }
+    if (protocol === 'http:') {
+      if (this.config.allowInsecureHttp === true) {
+        this.logger.warn('[gitlab] auth.gitlab.url uses http: GitLab tokens are sent unencrypted');
+        return url;
+      }
+      throw Error('[gitlab] auth.gitlab.url must use https; set auth.gitlab.allowInsecureHttp: true to accept http');
+    }
+    throw Error(`[gitlab] auth.gitlab.url must use https, got ${protocol}`);
   }
 
   public authenticate(user: string, password: string, cb: Callback) {
