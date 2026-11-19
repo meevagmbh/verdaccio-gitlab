@@ -26,7 +26,7 @@ describe('Gitlab Auth Plugin security events', () => {
 
   beforeEach(() => {
     plugin = new VerdaccioGitlab(config.verdaccioGitlabConfig, config.options);
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('a token of another gitlab user is logged as a warning with both names', async () => {

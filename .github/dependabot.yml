@@ -16,10 +16,8 @@ updates:
       include: scope
     open-pull-requests-limit: 10
     groups:
-      babel:
-        patterns: ['@babel/*', 'babel-jest']
-      jest:
-        patterns: ['jest', 'jest-*', '@types/jest']
+      vitest:
+        patterns: ['vitest', '@vitest/*', 'vite']
       eslint:
         patterns: ['eslint', '@eslint/*', 'typescript-eslint', 'globals']
       gitbeaker:

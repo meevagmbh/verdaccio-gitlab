@@ -5,7 +5,6 @@ flow-typed/
 # dot files by default excluded
 .*
 # dot file exceptions
-!.babelrc
 !.editorconfig
 !.eslintignore
 !.eslintrc*

@@ -1,6 +1,8 @@
+import { vi } from 'vitest';
+
 // Manual mock for the `@gitbeaker/rest` library.
 //
-// The API calls are shared jest.fn() instances rather than fresh closures per
+// The API calls are shared vi.fn() instances rather than fresh closures per
 // resource instance, so tests can assert how many requests a single
 // authenticate() actually makes. They are exposed as `__calls`, together with
 // the options each resource was constructed with.
@@ -22,7 +24,7 @@ function gitlabError(status, message) {
   return new Error(message, { cause: { response: { status } } });
 }
 
-const usersCurrent = jest.fn((token) => {
+const usersCurrent = vi.fn((token) => {
   if (token === OTHER_TOKEN) {
     return Promise.resolve({ username: OTHER_USER });
   }
@@ -41,16 +43,16 @@ function atLeast(params, level) {
   return ((params || {}).minAccessLevel || 0) <= level;
 }
 
-const groupsAll = jest.fn((params) =>
+const groupsAll = vi.fn((params) =>
   Promise.resolve([{ path: 'myGroup', full_path: 'myGroup' }, ...(atLeast(params, 20) ? [{ path: 'readGroup', full_path: 'readGroup' }] : [])])
 );
 
-const projectsAll = jest.fn((params) =>
+const projectsAll = vi.fn((params) =>
   Promise.resolve([{ path_with_namespace: 'anotherGroup/myProject' }, ...(atLeast(params, 20) ? [{ path_with_namespace: 'readGroup/readProject' }] : [])])
 );
 
 // Records the options each resource is created with, keyed by resource name.
-const constructed = jest.fn();
+const constructed = vi.fn();
 
 function tokenOf(options) {
   return (options || {}).token;
@@ -89,4 +91,4 @@ class Projects {
 
 const __calls = { usersCurrent, groupsAll, projectsAll, constructed, gitlabError, OTHER_TOKEN, MAINTAINER };
 
-module.exports = { Users, Groups, Projects, __calls };
+export { Users, Groups, Projects, __calls };

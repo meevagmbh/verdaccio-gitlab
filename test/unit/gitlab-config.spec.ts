@@ -26,7 +26,7 @@ describe('Gitlab Auth Plugin url configuration', () => {
     expect(() => create({ url: 'http://gitlab', allowInsecureHttp: true })).not.toThrow();
   });
 
-  test.each(['ftp://gitlab.example.com', 'gitlab.example.com', 'file:///etc/passwd'])('rejects %p', (url) => {
+  test.each(['ftp://gitlab.example.com', 'gitlab.example.com', 'file:///etc/passwd'])('rejects %j', (url) => {
     expect(() => create({ url, allowInsecureHttp: true })).toThrow(/auth\.gitlab\.url/);
   });
 });

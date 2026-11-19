@@ -2,13 +2,9 @@ import { FailedLoginLimiter } from '../../src/login-limiter';
 
 // lru-cache keeps a reference to the global performance object from when it
 // loads, so the expiry test loads a fresh copy after the fake timers are set.
-function limiterWithFakeClock(): typeof FailedLoginLimiter {
-  let isolated: typeof FailedLoginLimiter = FailedLoginLimiter;
-  jest.isolateModules(() => {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    isolated = require('../../src/login-limiter').FailedLoginLimiter;
-  });
-  return isolated;
+async function limiterWithFakeClock(): Promise<typeof FailedLoginLimiter> {
+  vi.resetModules();
+  return (await import('../../src/login-limiter')).FailedLoginLimiter;
 }
 
 describe('FailedLoginLimiter', () => {
@@ -77,24 +73,24 @@ describe('FailedLoginLimiter', () => {
 
   describe('with a fake clock', () => {
     beforeEach(() => {
-      jest.useFakeTimers();
+      vi.useFakeTimers();
       // lru-cache reads a start time of 0 as "no ttl".
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
     });
 
     afterEach(() => {
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
 
-    test('forgets failures once the window from the first failure has passed', () => {
-      const limiter = new (limiterWithFakeClock())(2, 10);
+    test('forgets failures once the window from the first failure has passed', async () => {
+      const limiter = new (await limiterWithFakeClock())(2, 10);
 
       limiter.recordFailure('alice', 'a');
-      jest.advanceTimersByTime(9_000);
+      vi.advanceTimersByTime(9_000);
       limiter.recordFailure('alice', 'b');
       expect(limiter.isBlocked('alice')).toBe(true);
 
-      jest.advanceTimersByTime(1_001);
+      vi.advanceTimersByTime(1_001);
       expect(limiter.isBlocked('alice')).toBe(false);
     });
   });
