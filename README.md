@@ -5,8 +5,7 @@ as authentication provider for the private npm registry
 [Verdaccio](https://github.com/verdaccio/verdaccio), the sinopia fork.
 
 [![npm](https://badge.fury.io/js/verdaccio-gitlab.svg)](http://badge.fury.io/js/verdaccio-gitlab)
-[![build](https://travis-ci.org/bufferoverflow/verdaccio-gitlab.svg?branch=master)](https://travis-ci.org/bufferoverflow/verdaccio-gitlab)
-[![dependencies](https://david-dm.org/bufferoverflow/verdaccio-gitlab/status.svg)](https://david-dm.org/bufferoverflow/verdaccio-gitlab)
+[![CI](https://github.com/meevagmbh/verdaccio-gitlab/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/meevagmbh/verdaccio-gitlab/actions/workflows/ci.yml)
 
 The main goal and differences from other sinopia/verdaccio plugins are
 the following:

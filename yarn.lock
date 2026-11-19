@@ -1614,19 +1614,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@commitlint/travis-cli@npm:^8.3.3":
-  version: 8.3.3
-  resolution: "@commitlint/travis-cli@npm:8.3.3"
-  dependencies:
-    "@commitlint/cli": "npm:^8.3.3"
-    babel-runtime: "npm:6.26.0"
-    execa: "npm:0.11.0"
-  bin:
-    commitlint-travis: ./lib/cli.js
-  checksum: 10c0/07c27ae6cad289a2271c7ae0ed45a6a130cd5d4cd98aa199697fbc1541bf16bbf17031af6b3bfaba0b3b1392f5484c8d2debbc3ff539928f7a63f413e7be17d5
-  languageName: node
-  linkType: hard
-
 "@cypress/request@npm:4.0.1":
   version: 4.0.1
   resolution: "@cypress/request@npm:4.0.1"
@@ -3682,7 +3669,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"babel-runtime@npm:6.26.0, babel-runtime@npm:^6.23.0, babel-runtime@npm:^6.26.0":
+"babel-runtime@npm:^6.23.0, babel-runtime@npm:^6.26.0":
   version: 6.26.0
   resolution: "babel-runtime@npm:6.26.0"
   dependencies:
@@ -5464,21 +5451,6 @@ __metadata:
   version: 3.3.0
   resolution: "events@npm:3.3.0"
   checksum: 10c0/d6b6f2adbccbcda74ddbab52ed07db727ef52e31a61ed26db9feb7dc62af7fc8e060defa65e5f8af9449b86b52cc1a1f6a79f2eafcf4e62add2b7a1fa4a432f6
-  languageName: node
-  linkType: hard
-
-"execa@npm:0.11.0":
-  version: 0.11.0
-  resolution: "execa@npm:0.11.0"
-  dependencies:
-    cross-spawn: "npm:^6.0.0"
-    get-stream: "npm:^4.0.0"
-    is-stream: "npm:^1.1.0"
-    npm-run-path: "npm:^2.0.0"
-    p-finally: "npm:^1.0.0"
-    signal-exit: "npm:^3.0.0"
-    strip-eof: "npm:^1.0.0"
-  checksum: 10c0/a2d82030e42249ce2ec581f45b3c9731ab114f05e1a6f42bc6517b4ab91417da85e4b4dc5b0fa9061fb7571d190236492a2cfdcfc43ff909f22c290033788b71
   languageName: node
   linkType: hard
 
@@ -12256,7 +12228,6 @@ __metadata:
     "@babel/register": "npm:7.29.13"
     "@commitlint/cli": "npm:^8.3.3"
     "@commitlint/config-conventional": "npm:^8.3.3"
-    "@commitlint/travis-cli": "npm:^8.3.3"
     "@eslint/js": "npm:10.0.1"
     "@types/jest": "npm:30.0.0"
     "@types/lodash": "npm:^4.14.149"
