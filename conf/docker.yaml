@@ -31,6 +31,5 @@ packages:
     proxy: npmjs
     gitlab: true
 
-logs:
-  - { type: stdout, format: pretty, level: info }
-  #- {type: file, path: verdaccio.log, level: info}
+# verdaccio 5+ takes a single `log` object; the `logs` list is deprecated.
+log: { type: stdout, format: pretty, level: info }

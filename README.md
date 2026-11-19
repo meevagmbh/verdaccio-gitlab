@@ -63,8 +63,7 @@ packages:
     gitlab: true
 
 # Log level can be changed to info, http etc. for less verbose output
-logs:
-  - {type: stdout, format: pretty, level: debug}
+log: {type: stdout, format: pretty, level: debug}
 ```
 
 Restart Verdaccio and authenticate into it with your credentials
