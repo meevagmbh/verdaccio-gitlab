@@ -7,6 +7,7 @@ import { Groups, Projects, Users } from '@gitbeaker/rest';
 
 import { requesterFn } from './gitlab-requester';
 import { logSafe } from './log-safe';
+import { FailedLoginLimiter } from './login-limiter';
 
 import { UserDataGroups } from './authcache';
 import { AuthCache, UserData } from './authcache';
@@ -58,6 +59,9 @@ const GROUPS_LOG_LENGTH = 4000;
 // unreachable, overloaded or failing.
 const TOKEN_REJECTED_STATUSES = [401, 403];
 
+const WRONG_USERNAME = 'wrong gitlab username';
+const AUTHENTICATION_ERROR = 'error authenticating user';
+
 // The HTTP status of GitLab's answer, which the request handler attaches as
 // error.cause.response; undefined for network errors and timeouts.
 function gitlabStatus(error: any): number | undefined {
@@ -81,6 +85,7 @@ export default class VerdaccioGitLab
   // only written once a walk finishes, so without this every request that
   // arrives while one is in flight starts its own walk against gitlab.
   private inflightWalks: Map<string, Promise<string[]>> = new Map();
+  private loginLimiter: FailedLoginLimiter = new FailedLoginLimiter();
 
   public constructor(config: VerdaccioGitlabConfig, options: pluginUtils.PluginOptions) {
     super(config, options);
@@ -147,16 +152,28 @@ export default class VerdaccioGitLab
     // Not found in cache, query gitlab
     this.logger.trace({ user: logSafe(user) }, '[gitlab] user: @{user} not found in cache');
 
+    const walkKey = AuthCache.generateKeyHash(user, password);
+
+    // GitLab already rejected these credentials within the window.
+    const rejection = this.loginLimiter.rejection(user, walkKey);
+    if (rejection) {
+      this.logger.trace({ user: logSafe(user) }, '[gitlab] user: @{user} credentials already rejected by gitlab');
+      return cb(errorUtils.getUnauthorized(rejection));
+    }
+    if (this.loginLimiter.isBlocked(user)) {
+      this.logger.trace({ user: logSafe(user) }, '[gitlab] user: @{user} blocked after too many failed logins');
+      return cb(errorUtils.getCode(429, 'too many failed logins, try again later'));
+    }
+
     // A burst of npm requests arrives faster than one walk completes, so join
     // an already running walk for the same credentials instead of starting
     // another. Without this the cache never gets the chance to help.
-    const walkKey = AuthCache.generateKeyHash(user, password);
     let walk = this.inflightWalks.get(walkKey);
 
     if (walk) {
       this.logger.trace({ user: logSafe(user) }, '[gitlab] user: @{user} joining gitlab query already in flight');
     } else {
-      walk = this._queryUserGroups(user, password);
+      walk = this._queryUserGroups(user, password, walkKey);
       this.inflightWalks.set(walkKey, walk);
 
       // Release the slot on success and on failure alike, so a rejected walk
@@ -176,7 +193,17 @@ export default class VerdaccioGitLab
   // Resolves to the groups the user may publish to, or rejects with the
   // verdaccio error to hand back. Split out of authenticate() so that a single
   // walk can be shared by concurrent logins.
-  private _queryUserGroups(user: string, password: string): Promise<string[]> {
+  // Counts a login GitLab definitely rejected, as opposed to GitLab failing.
+  private _recordRejectedLogin(user: string, credentialHash: string, message: string): void {
+    if (this.loginLimiter.recordFailure(user, credentialHash, message)) {
+      this.logger.warn(
+        { user: logSafe(user), max: FailedLoginLimiter.DEFAULT_MAX_FAILURES, window: FailedLoginLimiter.DEFAULT_WINDOW_SECONDS },
+        '[gitlab] user: @{user} blocked after @{max} failed logins, for up to @{window} seconds'
+      );
+    }
+  }
+
+  private _queryUserGroups(user: string, password: string, credentialHash: string): Promise<string[]> {
     // Only the three resources the walk needs: the client's all-in-one Gitlab
     // class builds every resource it knows on each login.
     const clientOptions = { host: this.gitlabHost, token: password, requesterFn };
@@ -191,7 +218,8 @@ export default class VerdaccioGitLab
             { user: logSafe(user), gitlabUser: logSafe(response.username) },
             '[gitlab] login as user: @{user} rejected, the token belongs to gitlab user: @{gitlabUser}'
           );
-          return Promise.reject(errorUtils.getUnauthorized('wrong gitlab username'));
+          this._recordRejectedLogin(user, credentialHash, WRONG_USERNAME);
+          return Promise.reject(errorUtils.getUnauthorized(WRONG_USERNAME));
         }
 
         const publishLevelId = ACCESS_LEVEL_MAPPING[this.publishLevel];
@@ -215,6 +243,7 @@ export default class VerdaccioGitLab
           ([groups, projectGroups]) => {
             const realGroups = [user, ...groups, ...projectGroups];
             this._setCachedUserGroups(user, password, { publish: realGroups });
+            this.loginLimiter.recordSuccess(user);
 
             this.logger.info({ user: logSafe(user) }, '[gitlab] user: @{user} successfully authenticated');
             this.logger.debug(
@@ -229,7 +258,7 @@ export default class VerdaccioGitLab
               { user: logSafe(user), error: logSafe(error?.message) },
               '[gitlab] user: @{user} error querying gitlab: @{error}'
             );
-            return Promise.reject(errorUtils.getUnauthorized('error authenticating user'));
+            return Promise.reject(errorUtils.getUnauthorized(AUTHENTICATION_ERROR));
           }
         );
       },
@@ -239,13 +268,14 @@ export default class VerdaccioGitLab
             { user: logSafe(user), status: gitlabStatus(error) },
             '[gitlab] login as user: @{user} rejected, gitlab answered @{status} for the token'
           );
+          this._recordRejectedLogin(user, credentialHash, AUTHENTICATION_ERROR);
         } else {
           this.logger.error(
             { user: logSafe(user), error: logSafe(error?.message) },
             '[gitlab] user: @{user} error querying gitlab user data: @{error}'
           );
         }
-        return Promise.reject(errorUtils.getUnauthorized('error authenticating user'));
+        return Promise.reject(errorUtils.getUnauthorized(AUTHENTICATION_ERROR));
       }
     );
   }

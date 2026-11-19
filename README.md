@@ -198,6 +198,26 @@ multi-process; if the cluster module is used for starting several
 verdaccio processes, each process will store its own copy of the cache,
 so each user will actually be logged in multiple times.
 
+## Failed Logins
+
+Once GitLab has rejected 10 different tokens for one user name within
+300 seconds, further logins with new credentials for that user name are
+answered with `429 Too Many Requests` for the rest of the 300 seconds,
+without asking GitLab. A token GitLab has already rejected is refused
+again without asking GitLab, so a client retrying one expired token does
+not count against the limit. A successful login clears the count.
+
+Only rejected tokens count (GitLab answering 401 or 403, or a token that
+belongs to another GitLab user). GitLab being unreachable or overloaded
+does not.
+
+> *Please note* that verdaccio passes the plugin neither the client
+address nor the request, so the limit applies per user name: someone who
+knows a user name can block new logins for it for up to 300 seconds.
+Logins already in the authentication cache keep working. Like the cache,
+the count is per process. To limit requests per client address, set
+verdaccio's own `userRateLimit` and put a rate limit in the reverse proxy.
+
 ## Docker
 
 ```sh

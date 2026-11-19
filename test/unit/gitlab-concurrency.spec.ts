@@ -69,24 +69,28 @@ describe('Gitlab Auth Plugin concurrency', () => {
 
   test('a failed walk is not cached, so the next login retries', () => {
     const plugin: VerdaccioGitlab = new VerdaccioGitlab(config.verdaccioGitlabConfig, config.options);
-    const wrongPass = config.pass + '_wrong';
+    // A GitLab outage, not a rejected token: GitLab rejecting a token is
+    // remembered on purpose (see gitlab-login-limit.spec.ts).
+    const gitlabUser = calls.usersCurrent.getMockImplementation();
+    calls.usersCurrent.mockImplementation(() => Promise.reject(calls.gitlabError(502, 'Bad Gateway')));
 
-    return authenticate(plugin, config.user, wrongPass)
+    return authenticate(plugin, config.user, config.pass)
       .then(
         () => {
           throw new Error('authentication should have failed');
         },
-        () => authenticate(plugin, config.user, wrongPass).then(
+        () => authenticate(plugin, config.user, config.pass).then(
           () => {
             throw new Error('authentication should have failed');
           },
           () => {
-            // Two attempts must reach gitlab: a rejected walk must not leave a
+            // Two attempts must reach gitlab: a failed walk must not leave a
             // stale entry that makes later logins fail without asking.
             expect(calls.usersCurrent).toHaveBeenCalledTimes(2);
           }
         )
-      );
+      )
+      .finally(() => calls.usersCurrent.mockImplementation(gitlabUser));
   });
 
   test('group and project queries ask for the maximum page size', () => {
