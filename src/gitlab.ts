@@ -49,9 +49,6 @@ const BUILTIN_ACCESS_LEVEL_ANONYMOUS = ['$anonymous', '$all'];
 // a real path, and verdaccio stores it like any other group.
 export const READ_ONLY_PREFIX = 'gitlab-read:';
 
-// Level to apply on 'allow_access' calls when a package definition does not define one
-const DEFAULT_ALLOW_ACCESS_LEVEL = ['$all'];
-
 // Page size for the group and project queries. The GitLab API defaults to 20
 // and caps at 100, and the client passes this straight through to the query
 // string, then follows the `Link: rel="next"` header for further pages. On
@@ -337,7 +334,8 @@ export default class VerdaccioGitLab
   public allow_access(user: RemoteUser, _package: VerdaccioGitlabPackageAccess & PackageAccess, cb: Callback) {
     if (!_package.gitlab) return cb(null, false);
 
-    const packageAccess = _package.access && _package.access.length > 0 ? _package.access : DEFAULT_ALLOW_ACCESS_LEVEL;
+    // A section without access is not public: verdaccio reads it as nobody.
+    const packageAccess = _package.access || [];
     const packageName = _package.name as string;
 
     if (BUILTIN_ACCESS_LEVEL_ANONYMOUS.some(level => packageAccess.includes(level))) {

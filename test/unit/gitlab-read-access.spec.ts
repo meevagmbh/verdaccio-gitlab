@@ -115,12 +115,16 @@ describe('Gitlab Auth Plugin read access', () => {
       expect(anonymous.ok).toBe(true);
     });
 
-    test('a section without access is public, as in verdaccio', async () => {
+    // verdaccio reads a section without access as "nobody"; it must not
+    // turn into public here.
+    test('a section without access is not public', async () => {
       const pkg = { ...privatePackage('@foreignGroup/pkg'), access: [] };
 
-      const { ok } = await check(cb => plugin.allow_access(remoteUser(groups), pkg, cb));
+      const member = await check(cb => plugin.allow_access(remoteUser(groups), pkg, cb));
+      const anonymous = await check(cb => plugin.allow_access({ name: undefined, real_groups: [], groups: [] }, pkg, cb));
 
-      expect(ok).toBe(true);
+      expect(member.err.status).toBe(403);
+      expect(anonymous.err.status).toBe(401);
     });
   });
 

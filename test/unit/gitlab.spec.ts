@@ -115,7 +115,7 @@ describe('Gitlab Auth Plugin Unit Tests', () => {
     verdaccioGitlab.allow_access(config.remoteUser, _package, cb);
   });
 
-  test('should allow access to package when access level is empty (default = $all)', done => {
+  test('should allow access to own package when the section has no access level', done => {
     const verdaccioGitlab: VerdaccioGitlab = new VerdaccioGitlab(config.verdaccioGitlabConfig, config.options);
     const _package: VerdaccioGitlabPackageAccess = {
       name: config.user,
