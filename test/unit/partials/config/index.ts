@@ -23,7 +23,7 @@ const remoteUser: RemoteUser = {
 };
 
 const userDataGroups: UserDataGroups = {
-  publish: ['fooGroup1', 'fooGroup2'],
+  realGroups: ['fooGroup1', 'fooGroup2'],
 };
 const userData: UserData = new UserData(user, userDataGroups);
 
