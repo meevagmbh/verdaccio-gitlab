@@ -12,10 +12,22 @@
 // callback with an error.
 const VALID_USER = 'myUser';
 const VALID_TOKEN = 'myPass';
+// A valid token of another GitLab user.
+const OTHER_USER = 'otherUser';
+const OTHER_TOKEN = 'otherUsersPass';
+
+// Rejects like the plugin's request handler does: GitLab's answer is on
+// error.cause.response.
+function gitlabError(status, message) {
+  return new Error(message, { cause: { response: { status } } });
+}
 
 const usersCurrent = jest.fn(token => {
+  if (token === OTHER_TOKEN) {
+    return Promise.resolve({ username: OTHER_USER });
+  }
   if (token !== VALID_TOKEN) {
-    return Promise.reject(new Error('401 Unauthorized'));
+    return Promise.reject(gitlabError(401, '401 Unauthorized'));
   }
 
   return Promise.resolve({ username: VALID_USER });
@@ -76,6 +88,6 @@ class Projects {
   }
 }
 
-const __calls = { usersCurrent, groupsAll, projectsAll, constructed };
+const __calls = { usersCurrent, groupsAll, projectsAll, constructed, gitlabError, OTHER_TOKEN };
 
 module.exports = { Users, Groups, Projects, __calls };

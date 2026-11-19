@@ -54,6 +54,16 @@ const GITLAB_PAGE_SIZE = 100;
 // Group lists can be long; debug logs keep more of them than other fields.
 const GROUPS_LOG_LENGTH = 4000;
 
+// GitLab's answers that reject the token itself, as opposed to GitLab being
+// unreachable, overloaded or failing.
+const TOKEN_REJECTED_STATUSES = [401, 403];
+
+// The HTTP status of GitLab's answer, which the request handler attaches as
+// error.cause.response; undefined for network errors and timeouts.
+function gitlabStatus(error: any): number | undefined {
+  return error?.cause?.response?.status;
+}
+
 export default class VerdaccioGitLab
   extends pluginUtils.Plugin<VerdaccioGitlabConfig>
   implements pluginUtils.Auth<VerdaccioGitlabConfig>
@@ -177,6 +187,10 @@ export default class VerdaccioGitLab
     return users.showCurrentUser().then(
       response => {
         if (user.toLowerCase() !== response.username.toLowerCase()) {
+          this.logger.warn(
+            { user: logSafe(user), gitlabUser: logSafe(response.username) },
+            '[gitlab] login as user: @{user} rejected, the token belongs to gitlab user: @{gitlabUser}'
+          );
           return Promise.reject(errorUtils.getUnauthorized('wrong gitlab username'));
         }
 
@@ -220,10 +234,17 @@ export default class VerdaccioGitLab
         );
       },
       error => {
-        this.logger.error(
-          { user: logSafe(user), error: logSafe(error?.message) },
-          '[gitlab] user: @{user} error querying gitlab user data: @{error}'
-        );
+        if (TOKEN_REJECTED_STATUSES.includes(gitlabStatus(error) as number)) {
+          this.logger.warn(
+            { user: logSafe(user), status: gitlabStatus(error) },
+            '[gitlab] login as user: @{user} rejected, gitlab answered @{status} for the token'
+          );
+        } else {
+          this.logger.error(
+            { user: logSafe(user), error: logSafe(error?.message) },
+            '[gitlab] user: @{user} error querying gitlab user data: @{error}'
+          );
+        }
         return Promise.reject(errorUtils.getUnauthorized('error authenticating user'));
       }
     );
@@ -257,7 +278,7 @@ export default class VerdaccioGitLab
         this.logger.debug({ pkg: logSafe(_package.name) }, '[gitlab] allow anonymous access to package: @{pkg}');
         return cb(null, true);
       } else {
-        this.logger.debug({ pkg: logSafe(_package.name) }, '[gitlab] deny access to package: @{pkg}');
+        this.logger.info({ pkg: logSafe(_package.name) }, '[gitlab] deny anonymous access to package: @{pkg}');
         return cb(errorUtils.getUnauthorized('access denied, user not authenticated and anonymous access disabled'));
       }
     }
@@ -292,7 +313,7 @@ export default class VerdaccioGitLab
       );
       return cb(null, true);
     } else {
-      this.logger.debug(
+      this.logger.warn(
         { user: logSafe(user.name || ''), pkg: logSafe(_package.name) },
         '[gitlab] user: @{user} denied from publishing package: @{pkg}'
       );
