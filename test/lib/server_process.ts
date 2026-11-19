@@ -4,7 +4,7 @@ import { fork } from 'child_process';
 import rimRaf from 'rimraf';
 import _ from 'lodash';
 
-import { CREDENTIALS } from '../functional/config.functional';
+import { CREDENTIALS, DOMAIN_SERVERS } from '../functional/config.functional';
 import { IVerdaccioConfig, IServerBridge, IServerProcess } from '../types';
 
 import { HTTP_STATUS } from './constants';
@@ -62,7 +62,11 @@ export default class VerdaccioProcess implements IServerProcess {
     }
 
     const { configPath, port } = this.config;
-    this.childFork = fork(verdaccioRegisterWrap, ['-c', configPath, '-l', port as string], childOptions);
+    // Bind the host the test bridge connects to. A bare port makes verdaccio
+    // listen on `localhost`, which Node 17+ resolves to ::1 first, so the
+    // bridge's IPv4 connection to DOMAIN_SERVERS would be refused.
+    const listen = `${DOMAIN_SERVERS}:${port}`;
+    this.childFork = fork(verdaccioRegisterWrap, ['-c', configPath, '-l', listen], childOptions);
 
     this.childFork.on('message', msg => {
       // verdaccio_started is a message that comes from verdaccio in debug mode that notify has been started
