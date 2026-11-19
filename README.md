@@ -19,7 +19,8 @@ the following:
 
 ## Use it
 
-You need at least node version 8.x.x, codename **carbon**.
+You need node version 24.x (LTS, codename **Krypton**), the version the
+official verdaccio 6 image runs on.
 
 ```sh
 git clone https://github.com/bufferoverflow/verdaccio-gitlab.git

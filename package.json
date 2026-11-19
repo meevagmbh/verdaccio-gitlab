@@ -46,7 +46,7 @@
     "url": "https://github.com/bufferoverflow/verdaccio-gitlab/issues"
   },
   "engines": {
-    "node": ">=10"
+    "node": ">=24"
   },
   "dependencies": {
     "@verdaccio/commons-api": "^8.5.0",

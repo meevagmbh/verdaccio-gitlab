@@ -3,8 +3,7 @@ services:
   - docker
 sudo: false
 node_js:
-  - 'lts/dubnium'
-  - 'lts/*'
+  - '24'
 script:
   - yarn install
   - commitlint-travis
