@@ -13,11 +13,11 @@ import config from './partials/config';
 const calls = (GitbeakerRest as any).__calls;
 
 function authenticate(plugin: VerdaccioGitlab, pass: string = config.pass): Promise<any> {
-  return new Promise(resolve => plugin.authenticate(config.user, pass, (err: any, groups: any) => resolve(err || groups)));
+  return new Promise((resolve) => plugin.authenticate(config.user, pass, (err: any, groups: any) => resolve(err || groups)));
 }
 
 function check(invoke: (cb: (err: any, ok?: boolean) => void) => void): Promise<{ err: any; ok?: boolean }> {
-  return new Promise(resolve => invoke((err, ok) => resolve({ err, ok })));
+  return new Promise((resolve) => invoke((err, ok) => resolve({ err, ok })));
 }
 
 function remoteUser(groups: string[]): RemoteUser {
@@ -41,13 +41,7 @@ describe('Gitlab Auth Plugin read access', () => {
       const groups = await authenticate(plugin);
 
       expect(groups.sort()).toEqual(
-        [
-          'myUser',
-          'myGroup',
-          'anotherGroup/myProject',
-          `${READ_ONLY_PREFIX}readGroup`,
-          `${READ_ONLY_PREFIX}readGroup/readProject`,
-        ].sort()
+        ['myUser', 'myGroup', 'anotherGroup/myProject', `${READ_ONLY_PREFIX}readGroup`, `${READ_ONLY_PREFIX}readGroup/readProject`].sort()
       );
     });
 
@@ -73,9 +67,7 @@ describe('Gitlab Auth Plugin read access', () => {
     });
 
     test('rejects an unknown access level', () => {
-      expect(() => new VerdaccioGitlab({ ...config.verdaccioGitlabConfig, access: '$nobody' as any }, config.options)).toThrow(
-        /access level/
-      );
+      expect(() => new VerdaccioGitlab({ ...config.verdaccioGitlabConfig, access: '$nobody' as any }, config.options)).toThrow(/access level/);
     });
   });
 
@@ -89,7 +81,7 @@ describe('Gitlab Auth Plugin read access', () => {
       ['a package named like the user', 'myUser'],
       ['a package named like a group', 'myGroup'],
     ])('allows %s', async (_name, pkg) => {
-      const { err, ok } = await check(cb => plugin.allow_access(remoteUser(groups), privatePackage(pkg), cb));
+      const { err, ok } = await check((cb) => plugin.allow_access(remoteUser(groups), privatePackage(pkg), cb));
 
       expect(err).toBeFalsy();
       expect(ok).toBe(true);
@@ -100,16 +92,16 @@ describe('Gitlab Auth Plugin read access', () => {
       ['an unscoped package without a matching group', 'lodash'],
       ['a package named like the prefix itself', `${READ_ONLY_PREFIX}readGroup`],
     ])('denies %s with 403', async (_name, pkg) => {
-      const { err } = await check(cb => plugin.allow_access(remoteUser(groups), privatePackage(pkg), cb));
+      const { err } = await check((cb) => plugin.allow_access(remoteUser(groups), privatePackage(pkg), cb));
 
       expect(err.status).toBe(403);
     });
 
-    test.each([['$all'], ['$anonymous']])('allows anyone into a section with %s access', async level => {
+    test.each([['$all'], ['$anonymous']])('allows anyone into a section with %s access', async (level) => {
       const pkg = { ...privatePackage('@foreignGroup/pkg'), access: [level] };
 
-      const member = await check(cb => plugin.allow_access(remoteUser(groups), pkg, cb));
-      const anonymous = await check(cb => plugin.allow_access({ name: undefined, real_groups: [], groups: [] }, pkg, cb));
+      const member = await check((cb) => plugin.allow_access(remoteUser(groups), pkg, cb));
+      const anonymous = await check((cb) => plugin.allow_access({ name: undefined, real_groups: [], groups: [] }, pkg, cb));
 
       expect(member.ok).toBe(true);
       expect(anonymous.ok).toBe(true);
@@ -120,8 +112,8 @@ describe('Gitlab Auth Plugin read access', () => {
     test('a section without access is not public', async () => {
       const pkg = { ...privatePackage('@foreignGroup/pkg'), access: [] };
 
-      const member = await check(cb => plugin.allow_access(remoteUser(groups), pkg, cb));
-      const anonymous = await check(cb => plugin.allow_access({ name: undefined, real_groups: [], groups: [] }, pkg, cb));
+      const member = await check((cb) => plugin.allow_access(remoteUser(groups), pkg, cb));
+      const anonymous = await check((cb) => plugin.allow_access({ name: undefined, real_groups: [], groups: [] }, pkg, cb));
 
       expect(member.err.status).toBe(403);
       expect(anonymous.err.status).toBe(401);
@@ -132,7 +124,7 @@ describe('Gitlab Auth Plugin read access', () => {
     test('a read role does not allow publishing', async () => {
       const groups = ['myUser', `${READ_ONLY_PREFIX}readGroup`];
 
-      const { err } = await check(cb => plugin.allow_publish(remoteUser(groups), privatePackage('@readGroup/pkg'), cb));
+      const { err } = await check((cb) => plugin.allow_publish(remoteUser(groups), privatePackage('@readGroup/pkg'), cb));
 
       expect(err.status).toBe(403);
     });

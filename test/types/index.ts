@@ -9,7 +9,6 @@ export interface IRequestPromise {
   status(reason: any): any;
   body_ok(reason: any): any;
   body_error(reason: any): any;
-  request(reason: any): any;
   response(reason: any): any;
   send(reason: any): any;
 }
@@ -35,7 +34,6 @@ export interface IServerBridge {
   removeTarball(name: string): Promise<any>;
   removeSingleTarball(name: string, filename: string): Promise<any>;
   addTag(name: string, tag: string, version: string): Promise<any>;
-  putTarballIncomplete(name: string, filename: string, data: any, size: number, cb: (...args: any[]) => void): Promise<any>;
   addPackage(name: string): Promise<any>;
   whoami(): Promise<any>;
   ping(): Promise<any>;
