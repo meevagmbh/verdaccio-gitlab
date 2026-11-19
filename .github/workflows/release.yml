@@ -3,6 +3,8 @@ name: Release
 # A vX.Y.Z tag (pushed by scripts/release.sh) builds the Docker image from
 # that tag, smoke-tests it and pushes it to the GitHub container registry as
 # ghcr.io/<owner>/verdaccio-gitlab, tagged as scripts/image-tags.sh says.
+# It also attests the image's build provenance, so users can check with
+# `gh attestation verify` that an image was built here from a given commit.
 on:
   push:
     tags: ['v*.*.*']
@@ -22,6 +24,10 @@ jobs:
     permissions:
       contents: read
       packages: write
+      # Both only for actions/attest: sign the provenance with a short-lived
+      # OIDC token and store the attestation.
+      id-token: write
+      attestations: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -52,6 +58,7 @@ jobs:
         run: sh scripts/docker-smoke-test.sh verdaccio-gitlab:release
 
       - name: Push the image
+        id: push
         env:
           VERSION: ${{ steps.version.outputs.version }}
           REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -62,8 +69,30 @@ jobs:
             docker tag verdaccio-gitlab:release "$image:$tag"
             docker push "$image:$tag"
           done
-          docker logout ghcr.io
+          # All tags point to the same image; attest it once by the digest
+          # the registry reports for it.
+          digest="$(docker buildx imagetools inspect "$image:$VERSION" --format '{{.Manifest.Digest}}')"
+          if [ -z "$digest" ]; then
+            echo "no registry digest for $image after the push" >&2
+            exit 1
+          fi
+          echo "image=$image" >> "$GITHUB_OUTPUT"
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
           {
             echo "Pushed \`$image\` with tags:"
             sh scripts/image-tags.sh "$VERSION" | sed 's/^/- /'
+            echo
+            echo "Digest: \`$digest\`"
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Attest the build provenance
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-name: ${{ steps.push.outputs.image }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          # Uses the registry login from the push step.
+          push-to-registry: true
+
+      - name: Log out of the registry
+        if: always()
+        run: docker logout ghcr.io

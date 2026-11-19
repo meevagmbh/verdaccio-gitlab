@@ -317,6 +317,14 @@ tag, runs `scripts/docker-smoke-test.sh` on it and pushes it to
 (a prerelease such as `X.Y.Z-rc.1` gets only its own tag). To roll back, run
 the image of an earlier version.
 
+Each image carries a build provenance attestation. Check that an image was
+built by this repository's `Release` workflow before you deploy it:
+
+```sh
+gh attestation verify oci://ghcr.io/meevagmbh/verdaccio-gitlab:X.Y.Z \
+  -R meevagmbh/verdaccio-gitlab
+```
+
 The package is not published to npm: the name `verdaccio-gitlab` on npmjs
 belongs to the upstream project.
 
