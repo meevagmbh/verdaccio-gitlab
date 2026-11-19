@@ -81,7 +81,9 @@ export function createRetryingRequestHandler(options: RetryOptions = DEFAULT_RET
     const baseUrl = prefixUrl && !prefixUrl.endsWith('/') ? `${prefixUrl}/` : prefixUrl;
     const url = new URL(endpoint, baseUrl);
     url.search = searchParams || '';
-    const baseRequest = new Request(url, init);
+    // Never follow redirects: one would carry the PRIVATE-TOKEN header to
+    // whatever host the Location header names.
+    const baseRequest = new Request(url, { ...init, redirect: 'manual' });
 
     for (let attempt = 0; ; attempt += 1) {
       const request = baseRequest.clone();
@@ -94,6 +96,12 @@ export function createRetryingRequestHandler(options: RetryOptions = DEFAULT_RET
 
       if (response.ok) {
         return { body: await parseBody(response), headers: Object.fromEntries(response.headers.entries()), status: response.status };
+      }
+      if (response.status >= 300 && response.status < 400) {
+        const location = response.headers.get('location') || 'an unknown location';
+        throw new Error(
+          `GitLab answered ${response.status} redirect to ${location}; redirects are not followed, so set auth.gitlab.url to the final address`
+        );
       }
       if (!RETRY_STATUSES.includes(response.status)) {
         throw await requestError(request, response);

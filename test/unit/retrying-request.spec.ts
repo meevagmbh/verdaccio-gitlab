@@ -48,6 +48,28 @@ describe('retrying request handler', () => {
     expect(requests[0].headers.get('private-token')).toBe('secret');
   });
 
+  // A redirect would carry the PRIVATE-TOKEN header to wherever GitLab, or
+  // anyone between it and verdaccio, points the client.
+  test('redirects are never followed, whatever the client asks for', async () => {
+    const { fetchFn, requests } = fakeFetch(respond(200, {}));
+    const handler = createRetryingRequestHandler(fastRetries, fetchFn);
+
+    await handler('user', { prefixUrl: 'https://gitlab.example.com/api/v4', method: 'GET', redirect: 'follow' });
+
+    expect(requests[0].redirect).toBe('manual');
+  });
+
+  test('a redirect fails once with a message naming the target', async () => {
+    const redirect = new Response(null, { status: 301, headers: { location: 'https://elsewhere.example.com/api/v4/user' } });
+    const { fetchFn } = fakeFetch(redirect);
+    const handler = createRetryingRequestHandler(fastRetries, fetchFn);
+
+    await expect(handler('user', { prefixUrl: 'http://gitlab.example.com/api/v4', method: 'GET' })).rejects.toThrow(
+      /redirect.*https:\/\/elsewhere\.example\.com\/api\/v4\/user/
+    );
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+  });
+
   test('a 502 followed by a success is retried once', async () => {
     const { fetchFn } = fakeFetch(respond(502), respond(200, { username: 'u' }));
     const handler = createRetryingRequestHandler(fastRetries, fetchFn);
