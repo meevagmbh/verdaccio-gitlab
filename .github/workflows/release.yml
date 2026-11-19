@@ -24,10 +24,11 @@ jobs:
     permissions:
       contents: read
       packages: write
-      # Both only for actions/attest: sign the provenance with a short-lived
-      # OIDC token and store the attestation.
+      # Only for actions/attest: sign the provenance with a short-lived OIDC
+      # token, store the attestation, and record where the image is stored.
       id-token: write
       attestations: write
+      artifact-metadata: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
