@@ -302,12 +302,15 @@ the [@commitlint/config-conventional](https://github.com/conventional-changelog/
 rule set. `yarn install` sets up the hook (`.husky/commit-msg`) by pointing
 git's `core.hooksPath` at `.husky/_`.
 
-> PR's that do not pass CI will not be reviewed.
+Changes reach `master` only through a pull request whose CI checks pass:
+lint, unit tests, functional tests, the Docker smoke test, the Actions
+lockfile and the commit messages. `master` cannot be deleted or
+force-pushed, and release tags (`v*`) cannot be moved or deleted.
 
 ### Create a Release
 
-From a clean working tree, run one of the following commands to create a
-release:
+From a clean working tree on an up-to-date `master`, run one of the
+following commands to create a release:
 
 ```sh
 yarn release:major
@@ -321,7 +324,9 @@ from the Conventional Commits since the last tag to `CHANGELOG.md`, commits
 both as `chore(release): vX.Y.Z`, creates the `vX.Y.Z` tag and pushes the
 branch and the tag to the git remote that points to the repository in
 `package.json` (`scripts/release-remote.sh` finds it; the release stops if no
-remote or more than one matches).
+remote or more than one matches). The release commit goes straight to
+`master`, so only repository admins, who may bypass the pull request rule,
+can run it.
 
 The tag starts the `Release` workflow. It builds the Docker image from the
 tag, runs `scripts/docker-smoke-test.sh` on it and pushes it to
