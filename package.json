@@ -58,7 +58,6 @@
     "@gitbeaker/requester-utils": "44.0.5",
     "@gitbeaker/rest": "44.0.5",
     "@verdaccio/core": "8.4.0",
-    "global-tunnel-ng": "2.5.3",
     "node-cache": "4.2.0"
   },
   "devDependencies": {

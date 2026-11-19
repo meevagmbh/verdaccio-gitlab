@@ -30,8 +30,12 @@ yarn start
 ```
 
 > **NOTE**: If you are behind a proxy, define the `http_proxy`/`https_proxy`
-> environment variables and also set `NODE_USE_ENV_PROXY=1`. The GitLab client
-> uses Node's built-in `fetch`, which ignores the proxy variables without it.
+> (and optionally `no_proxy`) environment variables and also set
+> `NODE_USE_ENV_PROXY=1` when starting Node (it is read at startup only).
+> Verdaccio uses the proxy variables for its uplinks on its own (they can also
+> be set as `http_proxy`/`https_proxy`/`no_proxy` keys in the Verdaccio config,
+> globally or per uplink). The GitLab client uses Node's built-in `fetch`, which
+> ignores the proxy variables without `NODE_USE_ENV_PROXY=1`.
 
 Verdaccio is now up and running. In order the see this plugin in action, you can
 use the following Verdaccio configuration in your `~/.config/verdaccio/config.yaml`.
