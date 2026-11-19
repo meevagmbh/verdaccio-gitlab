@@ -301,7 +301,9 @@ It bumps the version in `package.json`, prepends the release notes generated
 by [conventional-changelog](https://github.com/conventional-changelog/conventional-changelog)
 from the Conventional Commits since the last tag to `CHANGELOG.md`, commits
 both as `chore(release): vX.Y.Z`, creates the `vX.Y.Z` tag and pushes the
-branch and the tag to `origin`.
+branch and the tag to the git remote that points to the repository in
+`package.json` (`scripts/release-remote.sh` finds it; the release stops if no
+remote or more than one matches).
 
 Finally publish the package to npm:
 
