@@ -1,4 +1,7 @@
 import { IServerBridge } from '../types';
+import Server from '../lib/server';
+
+import { DOMAIN_SERVERS, PORT_SERVER_1 } from './config.functional';
 
 import basic from './basic';
 import auth from './auth';
@@ -6,9 +9,11 @@ import access from './access';
 import publish from './publish';
 
 describe('Functional Tests verdaccio-gitlab', () => {
-  jest.setTimeout(10000);
-  const server1: IServerBridge = global.__SERVERS__[0];
-  const gitlab = global.__GITLAB_SERVER__.app;
+  // global-setup.ts starts the servers in another context and cannot hand
+  // them over, so the suite builds its own bridge to the same registry. The
+  // GitLab mock is not used by any suite.
+  const server1: IServerBridge = new Server(`http://${DOMAIN_SERVERS}:${PORT_SERVER_1}/`);
+  const gitlab = undefined;
 
   // list of tests
   // note: order of the following calls is important
