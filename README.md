@@ -253,6 +253,12 @@ does not.
 > the count is per process. To limit requests per client address, set
 > verdaccio's own `userRateLimit` and put a rate limit in the reverse proxy.
 
+## Operations
+
+[docs/operations.md](docs/operations.md) explains what to monitor and what to
+do when logins fail, a user is blocked, a token must stop working at once, or
+a user cannot read or publish a package.
+
 ## Docker
 
 ```sh
