@@ -1,3 +1,5 @@
+## [4.1.0](https://github.com/meevagmbh/verdaccio-gitlab/compare/v4.0.0...v4.1.0) (2026-11-19)
+
 ## [4.0.0](https://github.com/meevagmbh/verdaccio-gitlab/compare/v3.0.1...v4.0.0) (2026-11-19)
 
 ### ⚠ BREAKING CHANGES
