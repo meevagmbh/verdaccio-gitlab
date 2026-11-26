@@ -345,36 +345,36 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@gitbeaker/core@npm:44.0.5":
-  version: 44.0.5
-  resolution: "@gitbeaker/core@npm:44.0.5"
+"@gitbeaker/core@npm:44.1.5":
+  version: 44.1.5
+  resolution: "@gitbeaker/core@npm:44.1.5"
   dependencies:
-    "@gitbeaker/requester-utils": "npm:44.0.5"
+    "@gitbeaker/requester-utils": "npm:44.1.5"
     picoquery: "npm:^2.5.0"
     xcase: "npm:^2.0.1"
-  checksum: 10c0/5f617aab5f1214a1d69cbd746ea87ea9c94b016f195292518ee4cc903ca2fec82cc5d6ac714545bdf575664d3c7488601789467b8fee3d0fb09266e95cf84a8b
+  checksum: 10c0/b1bdc55e714a0e0417b7fc0960e57311bd811fc57f3d39d692c776721ff712440ad97aa4c37e3dba9c2516d380124267ec1c4698df5a17d5d416b353ecfc8ae4
   languageName: node
   linkType: hard
 
-"@gitbeaker/requester-utils@npm:44.0.5":
-  version: 44.0.5
-  resolution: "@gitbeaker/requester-utils@npm:44.0.5"
+"@gitbeaker/requester-utils@npm:44.1.5":
+  version: 44.1.5
+  resolution: "@gitbeaker/requester-utils@npm:44.1.5"
   dependencies:
     picomatch: "npm:^4.0.5"
     picoquery: "npm:^2.5.0"
     rate-limiter-flexible: "npm:^11.2.0"
     xcase: "npm:^2.0.1"
-  checksum: 10c0/c81aa4e496404ebb770f8881040e2197035187a4676feeb9c3a241559dc8b9ae0b492c2ba49d8592c11ed97433dd7915ef8874d972f97c6a565739f4feda9d02
+  checksum: 10c0/bd58dff97a3051aaf08d7c27154c76711c178e754a9b612cda619e6442d816f91bc4a85996af0649b344712ae2eb96c8da069e6e283bd2e81baddccabe3ab6a3
   languageName: node
   linkType: hard
 
-"@gitbeaker/rest@npm:44.0.5":
-  version: 44.0.5
-  resolution: "@gitbeaker/rest@npm:44.0.5"
+"@gitbeaker/rest@npm:44.1.5":
+  version: 44.1.5
+  resolution: "@gitbeaker/rest@npm:44.1.5"
   dependencies:
-    "@gitbeaker/core": "npm:44.0.5"
-    "@gitbeaker/requester-utils": "npm:44.0.5"
-  checksum: 10c0/6141d6b14375c4eb34d493d368e42d0212140e9a1b4fa8feb50f83907dd23dd031488c05324764c391f255035c6dd0bce42767646d04e7d2d70a9659b47ac026
+    "@gitbeaker/core": "npm:44.1.5"
+    "@gitbeaker/requester-utils": "npm:44.1.5"
+  checksum: 10c0/97f40d5ae3da32c671f936b5d457f056b760f684977e878d33c121404129c34ee754bbde5d27f3362721c610345a9bbc80b0db47804456bbe43cd7bc40b481ca
   languageName: node
   linkType: hard
 
@@ -7047,8 +7047,8 @@ __metadata:
   dependencies:
     "@commitlint/cli": "npm:21.2.4"
     "@commitlint/config-conventional": "npm:21.2.4"
-    "@gitbeaker/requester-utils": "npm:44.0.5"
-    "@gitbeaker/rest": "npm:44.0.5"
+    "@gitbeaker/requester-utils": "npm:44.1.5"
+    "@gitbeaker/rest": "npm:44.1.5"
     "@types/lodash": "npm:^4.17.27"
     "@types/node": "npm:24.19.2"
     "@verdaccio/core": "npm:8.4.0"
